@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #f3f4f6; /* Softer background for contrast */
+  color: #1f2937; /* Darker text for better readability */
+  font-family: "Inter", Arial, sans-serif;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #1f2937;
+  --text-primary: #111827; /* Deep gray for high contrast */
+  --text-secondary: #374151;
+  --card-bg: #ffffff;
+  --card-shadow: rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #121212;
+    --foreground: #e5e7eb;
+    --text-primary: #ffffff;
+    --text-secondary: #d1d5db;
+    --card-bg: #1f1f1f;
+    --card-shadow: rgba(255, 255, 255, 0.1);
+  }
+}
+
+body {
+  color: var(--text-primary);
+  background: var(--background);
+}
+
+/* ✅ Card Styling */
+.card {
+  background-color: var(--card-bg);
+  box-shadow: 0px 4px 12px var(--card-shadow);
+  padding: 20px;
+  border-radius: 12px;
+}
+
+/* ✅ Heading Styling */
+h1, h2 {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+/* ✅ Paragraphs & Labels */
+p, label {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* ✅ Button Styling */
+.btn-primary {
+  background-color: #2563eb;
+  color: white;
+  padding: 10px 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: 0.3s;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.btn-save {
+  background-color: #10b981;
+  color: white;
+  padding: 10px 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: 0.3s;
+}
+
+.btn-save:hover {
+  background-color: #059669;
+}
+
+/* ✅ Navbar Styling */
+nav {
+  transition: all 0.3s ease-in-out;
+}
+
+/* ✅ Hide menu on larger screens */
+@media (min-width: 1024px) {
+  .hidden {
+    display: flex !important;
+  }
+}
+
+input {
+  transition: all 0.3s ease-in-out;
+}
+
+input:focus {
+  transform: scale(1.02);
+}
+
+button {
+  transition: all 0.3s ease-in-out;
+}
+
+button:hover {
+  transform: scale(1.02);
+}
+/* ✅ Fix input text visibility */
+input, textarea {
+  color: #1f2937 !important; /* Dark gray text */
+  background-color: #ffffff !important; /* White background */
+  caret-color: #2563eb; /* Blue cursor */
+}
+
+/* ✅ Ensure focus styles are visible */
+input:focus, textarea:focus {
+  border-color: #2563eb;
+  outline: none;
+  box-shadow: 0 0 5px rgba(37, 99, 235, 0.5);
+}
+
+/* ✅ Placeholder text styling */
+input::placeholder, textarea::placeholder {
+  color: #9ca3af; /* Light gray */
+}

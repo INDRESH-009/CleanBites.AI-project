@@ -1,0 +1,494 @@
+// Fixed prompt for ChatGPT API
+const ANALYSIS_PROMPT = `
+{
+    "task": "Analyze the given food packet text and provide detailed insights based on the following categories.",
+    "categories": {
+        "Processing Level": "Classify the food as Minimally Processed, Moderately Processed, Highly Processed, or Ultra-Processed. Also, include the NOVA classification (e.g., NOVA 1, NOVA 2, NOVA 3, NOVA 4).",
+        "Harmful Ingredients": "List any potentially harmful ingredients, including artificial preservatives, trans fats, high fructose corn syrup, artificial colors, and flavor enhancers.",
+        "Beneficial Ingredients": "Highlight any health-boosting ingredients like fiber, omega-3s, natural antioxidants, and whole foods.",
+        "Diet Compatibility": "Check if the food is suitable or unsuitable for specific diets, such as Keto, Paleo, Vegan, Gluten-Free, Diabetic-Friendly, Low-Sodium, etc.",
+        "MacroNutrients Score": "Analyze the macronutrient balance (Proteins, Carbs, Fats, Fiber, Sugars, etc.) and assign a health score from 0-100.",
+        "MicroNutrients Score": "Evaluate essential vitamins and minerals (A, C, D, B-complex, Calcium, Iron, Magnesium, etc.) and provide a micronutrient score. **Exclude micronutrients where the value is 0 in the final output.**",
+        "Health Score": "Give an overall health score (0-100) based on processing level, harmful ingredients, and nutritional value.",
+        "Addictive Ingredient Warning": "Identify ingredients that may make the food addictive, such as sugar, caffeine, MSG, and artificial flavor enhancers.",
+        "Hidden Sweeteners": "List all alternative names for sugar found in the ingredients (e.g., Maltodextrin, Agave Nectar, Dextrose, High Fructose Corn Syrup).",
+        "Artificial vs. Natural Ingredients": "Compare the number of natural vs. artificial ingredients and provide a percentage breakdown.",
+        "Preservatives & Additives": "Analyze food preservatives and artificial additives, indicating if they are above safe consumption limits.",
+        "Gut Health Impact": "Check if the food contains gut-friendly ingredients (prebiotics, probiotics) or harmful ones (artificial sweeteners, preservatives).",
+        "Shelf-Life vs. Freshness": "Estimate the freshness score based on shelf life, preservatives, and expiration date.",
+        "Ingredient Source": "Identify whether ingredients are naturally sourced, GMO, synthetic, or farmed.",
+        "Allergen Alerts": "Detect common allergens (Gluten, Dairy, Soy, Nuts, Eggs, Shellfish, Sesame, Mustard) and provide a clear warning.",
+        "Food Coloring & Artificial Dye Warning": "Identify synthetic food dyes and their potential health effects.",
+        "Comparative Analysis": "Compare this product with a healthier alternative and suggest a swap.",
+        "Portion Size Impact": "Show real-world comparisons (e.g., 'Eating this contains sugar equal to 3 chocolate bars!').",
+        "Smart Substitutes": "Suggest healthier alternative foods based on user preferences.",
+        "Environmental Impact": {
+            "Carbon Footprint": "Estimate the carbon footprint of consuming this food item. Provide a relatable analogy such as 'Eating this is equivalent to driving X km in a petrol car' or 'Equivalent to the CO2 emissions of producing X plastic bottles.'",
+            "Sustainability Score": "Rate the food based on eco-friendliness (e.g., packaging recyclability, palm oil use, carbon emissions)."
+        }
+    },
+    "output_format": {
+        "processed": "<Processing Level> (e.g., 'Ultra-Processed Food: NOVA 4')",
+        "harmfulIngredients": ["<List of Harmful Ingredients>"],
+        "beneficialIngredients": ["<List of Beneficial Ingredients>"],
+        "suitableDiets": ["<Suitable Diets>"],
+        "notSuitableDiets": ["<Not Suitable Diets>"],
+        "macroNutrientsScore": {
+            "Proteins": "<Score>",
+            "Carbohydrates": "<Score>",
+            "Dietary Fiber": "<Score>",
+            "Sugars": "<Score>",
+            "Fats": "<Score>",
+            "Saturated Fats": "<Score>",
+            "Trans Fats": "<Score>",
+            "Monounsaturated Fats": "<Score>",
+            "Polyunsaturated Fats": "<Score>",
+            "Omega-3 Fatty Acids": "<Score>",
+            "Omega-6 Fatty Acids": "<Score>"
+        },
+        "microNutrientsScore": {
+            "Vitamin A": "<Score>",
+            "Vitamin E": "<Score>",
+            "Vitamin K": "<Score>",
+            "B1": "<Score>",
+            "B2": "<Score>",
+            "B3": "<Score>",
+            "B5": "<Score>",
+            "B6": "<Score>",
+            "B9": "<Score>",
+            "Calcium": "<Score>",
+            "Iron": "<Score>",
+            "Magnesium": "<Score>",
+            "Potassium": "<Score>",
+            "Sodium": "<Score>",
+            "Zinc": "<Score>",
+            "Phosphorus": "<Score>",
+            "Selenium": "<Score>",
+            "Copper": "<Score>",
+            "Manganese": "<Score>"
+        },
+        "healthScore": "<Overall Score>",
+        "addictiveIngredients": ["<List of Addictive Ingredients>"],
+        "hiddenSweeteners": ["<List of Hidden Sweeteners>"],
+        "artificialVsNaturalRatio": {
+            "Natural": "<Percentage>",
+            "Artificial": "<Percentage>"
+        },
+        "preservativesAnalysis": ["<List of Preservatives and Their Impact>"],
+        "gutHealthImpact": "<Gut Health Rating>",
+        "freshnessScore": "<Shelf Life Rating>",
+        "ingredientSource": "<Natural/Synthetic/Organic>",
+        "allergenAlerts": ["<List of Allergens Present>"],
+        "foodDyeWarning": ["<List of Artificial Dyes and Their Effects>"],
+        "comparativeAnalysis": {
+            "Alternative": "<Healthier Alternative>",
+            "Comparison": "<Nutritional Difference>"
+        },
+        "portionImpact": "<Example: 'This contains sugar equivalent to 3 chocolate bars.'>",
+        "smartSubstitutes": ["<List of Healthier Alternative Foods>"],
+        "environmentalImpact": {
+            "carbonFootprint": "<Example: 'Eating this is equivalent to driving 1.2km in a petrol car.'>",
+            "sustainabilityScore": "<Eco Score>"
+        },
+        "actionableSteps": ["<Step 1>", "<Step 2>", "<Step 3>"]
+    }
+}
+`
+
+
+
+
+
+// updated as per mongodb
+
+{
+    "task": "Analyze the given food packet text and provide detailed insights based on the following categories.",
+    "categories": {
+        "Processing Level": "Classify the food as Minimally Processed, Moderately Processed, Highly Processed, or Ultra-Processed. Also, include the NOVA classification (e.g., NOVA 1, NOVA 2, NOVA 3, NOVA 4).",
+        "Harmful Ingredients": "List any potentially harmful ingredients, including artificial preservatives, trans fats, high fructose corn syrup, artificial colors, and flavor enhancers.",
+        "Beneficial Ingredients": "Highlight any health-boosting ingredients like fiber, omega-3s, natural antioxidants, and whole foods.",
+        "Diet Compatibility": "Check if the food is suitable or unsuitable for specific diets, such as Keto, Paleo, Vegan, Gluten-Free, Diabetic-Friendly, Low-Sodium, etc.",
+        "MacroNutrients Score": "Analyze the macronutrient balance (Proteins, Carbs, Fats, Fiber, Sugars, etc.) and assign individual scores from 0-5.",
+        "MicroNutrients Score": "Evaluate essential vitamins and minerals (A, C, D, B-complex, Calcium, Iron, Magnesium, etc.) and provide individual scores from 0-5. **Exclude micronutrients where the value is 0 in the final output.**",
+        "Health Score": "Give an overall health score (0-100) based on processing level, harmful ingredients, and nutritional value.",
+        "Addictive Ingredient Warning": "Identify ingredients that may make the food addictive, such as sugar, caffeine, MSG, and artificial flavor enhancers.",
+        "Hidden Sweeteners": "List all alternative names for sugar found in the ingredients (e.g., Maltodextrin, Agave Nectar, Dextrose, High Fructose Corn Syrup).",
+        "Artificial vs. Natural Ingredients": "Provide a percentage breakdown of natural vs. artificial ingredients, ensuring both values are **integers only** (no percentage signs or strings).",
+        "Preservatives & Additives": "Analyze food preservatives and artificial additives and indicate if they are above safe consumption limits.",
+        "Gut Health Impact": "Check if the food contains gut-friendly ingredients (prebiotics, probiotics) or harmful ones (artificial sweeteners, preservatives).",
+        "Shelf-Life vs. Freshness": "Assign a numerical freshness score from 1-5 based on shelf life, preservatives, and expiration date.",
+        "Ingredient Source": "Identify whether ingredients are naturally sourced, GMO, synthetic, or farmed.",
+        "Allergen Alerts": "Detect common allergens (Gluten, Dairy, Soy, Nuts, Eggs, Shellfish, Sesame, Mustard) and provide a clear warning.",
+        "Food Coloring & Artificial Dye Warning": "Identify synthetic food dyes and their potential health effects.",
+        "Comparative Analysis": "Compare this product with a healthier alternative and suggest a swap.",
+        "Portion Size Impact": "Provide real-world comparisons (e.g., 'Drinking 300ml of this drink = Sugar content of a small chocolate bar').",
+        "Smart Substitutes": "Suggest healthier alternative foods based on user preferences.",
+        "Environmental Impact": {
+            "Carbon Footprint": "Estimate the carbon footprint of consuming this food item without using emojis. Provide a clear, simple explanation.",
+            "Sustainability Score": "Assign a numerical sustainability score from 1-5 based on eco-friendliness (e.g., packaging recyclability, palm oil use, carbon emissions)."
+        }
+    },
+    "output_format": {
+        "processed": "<Processing Level> (e.g., 'Ultra-Processed: NOVA 4')",
+        "harmfulIngredients": ["<List of Harmful Ingredients>"],
+        "beneficialIngredients": ["<List of Beneficial Ingredients>"],
+        "suitableDiets": ["<Suitable Diets>"],
+        "notSuitableDiets": ["<Not Suitable Diets>"],
+        "macroNutrientsScore": {
+            "Proteins": "<Score (0-5)>",
+            "Carbohydrates": "<Score (0-5)>",
+            "Dietary Fiber": "<Score (0-5)>",
+            "Sugars": "<Score (0-5)>",
+            "Fats": "<Score (0-5)>",
+            "Saturated Fats": "<Score (0-5)>",
+            "Trans Fats": "<Score (0-5)>",
+            "Monounsaturated Fats": "<Score (0-5)>",
+            "Polyunsaturated Fats": "<Score (0-5)>",
+            "Omega-3 Fatty Acids": "<Score (0-5)>",
+            "Omega-6 Fatty Acids": "<Score (0-5)>"
+        },
+        "microNutrientsScore": {
+            "Vitamin A": "<Score (0-5)>",
+            "Vitamin E": "<Score (0-5)>",
+            "Vitamin K": "<Score (0-5)>",
+            "B1": "<Score (0-5)>",
+            "B2": "<Score (0-5)>",
+            "B3": "<Score (0-5)>",
+            "B5": "<Score (0-5)>",
+            "B6": "<Score (0-5)>",
+            "B9": "<Score (0-5)>",
+            "Calcium": "<Score (0-5)>",
+            "Iron": "<Score (0-5)>",
+            "Magnesium": "<Score (0-5)>",
+            "Potassium": "<Score (0-5)>",
+            "Sodium": "<Score (0-5)>",
+            "Zinc": "<Score (0-5)>",
+            "Phosphorus": "<Score (0-5)>",
+            "Selenium": "<Score (0-5)>",
+            "Copper": "<Score (0-5)>",
+            "Manganese": "<Score (0-5)>"
+        },
+        "healthScore": "<Overall Score (0-100)>",
+        "addictiveIngredients": ["<List of Addictive Ingredients>"],
+        "hiddenSweeteners": ["<List of Hidden Sweeteners>"],
+        "artificialVsNaturalRatio": {
+            "Natural": "<Integer Only>",
+            "Artificial": "<Integer Only>"
+        },
+        "preservativesAnalysis": ["<List of Preservatives and Their Impact>"],
+        "gutHealthImpact": "<Gut Health Rating>",
+        "freshnessScore": "<Integer Score (1-5)>",
+        "ingredientSource": "<Natural/Synthetic/Organic>",
+        "allergenAlerts": ["<List of Allergens Present>"],
+        "foodDyeWarning": ["<List of Artificial Dyes and Their Effects>"],
+        "comparativeAnalysis": {
+            "Alternative": "<Healthier Alternative>",
+            "Comparison": "<Nutritional Difference>"
+        },
+        "portionImpact": "<Example: 'Drinking 300ml of this drink = Sugar content of a small chocolate bar.'>",
+        "smartSubstitutes": ["<List of Healthier Alternative Foods>"],
+        "environmentalImpact": {
+            "carbonFootprint": "<Clear Explanation Without Emojis>",
+            "sustainabilityScore": "<Integer Score (1-5)>"
+        },
+        "actionableSteps": ["<Step 1>", "<Step 2>", "<Step 3>"]
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import express from 'express';
+import axios from 'axios';
+import User from '../models/user.model.js';  // Import user model
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const router = express.Router();
+
+// Fixed prompt for ChatGPT API (Add the prompt here manually if needed)
+// Fixed prompt for ChatGPT API
+const ANALYSIS_PROMPT = `
+{
+{
+    "task": "Analyze the given food packet text and provide detailed insights based on the following categories.",
+    "categories": {
+        "Processing Level": "Classify the food as Minimally Processed, Moderately Processed, Highly Processed, or Ultra-Processed. Also, include the NOVA classification (e.g., NOVA 1, NOVA 2, NOVA 3, NOVA 4).",
+        "Harmful Ingredients": "List any potentially harmful ingredients, including artificial preservatives, trans fats, high fructose corn syrup, artificial colors, and flavor enhancers.",
+        "Beneficial Ingredients": "Highlight any health-boosting ingredients like fiber, omega-3s, natural antioxidants, and whole foods.",
+        "Diet Compatibility": "Check if the food is suitable or unsuitable for specific diets, such as Keto, Paleo, Vegan, Gluten-Free, Diabetic-Friendly, Low-Sodium, etc.",
+        "MacroNutrients Score": "Analyze the macronutrient balance (Proteins, Carbs, Fats, Fiber, Sugars, etc.) and assign individual scores from 0-5.",
+        "MicroNutrients Score": "Evaluate essential vitamins and minerals (A, C, D, B-complex, Calcium, Iron, Magnesium, etc.) and provide individual scores from 0-5. **Exclude micronutrients where the value is 0 in the final output.**",
+        "Health Score": "Give an overall health score (0-100) based on processing level, harmful ingredients, and nutritional value.",
+        "Addictive Ingredient Warning": "Identify ingredients that may make the food addictive, such as sugar, caffeine, MSG, and artificial flavor enhancers.",
+        "Hidden Sweeteners": "List all alternative names for sugar found in the ingredients (e.g., Maltodextrin, Agave Nectar, Dextrose, High Fructose Corn Syrup).",
+        "Artificial vs. Natural Ingredients": "Provide a percentage breakdown of natural vs. artificial ingredients, ensuring both values are **integers only** (no percentage signs or strings).",
+        "Preservatives & Additives": "Analyze food preservatives and artificial additives and indicate if they are above safe consumption limits.",
+        "Gut Health Impact": "Check if the food contains gut-friendly ingredients (prebiotics, probiotics) or harmful ones (artificial sweeteners, preservatives).",
+        "Shelf-Life vs. Freshness": "Assign a numerical freshness score from 1-5 based on shelf life, preservatives, and expiration date.",
+        "Ingredient Source": "Identify whether ingredients are naturally sourced, GMO, synthetic, or farmed.",
+        "Allergen Alerts": "Detect common allergens (Gluten, Dairy, Soy, Nuts, Eggs, Shellfish, Sesame, Mustard) and provide a clear warning.",
+        "Food Coloring & Artificial Dye Warning": "Identify synthetic food dyes and their potential health effects.",
+        "Comparative Analysis": "Compare this product with a healthier alternative and suggest a swap.",
+        "Portion Size Impact": "Provide real-world comparisons (e.g., 'Drinking 300ml of this drink = Sugar content of a small chocolate bar').",
+        "Smart Substitutes": "Suggest healthier alternative foods based on user preferences.",
+        "Environmental Impact": {
+            "Carbon Footprint": "Estimate the carbon footprint of consuming this food item without using emojis. Provide a clear, simple explanation.",
+            "Sustainability Score": "Assign a numerical sustainability score from 1-5 based on eco-friendliness (e.g., packaging recyclability, palm oil use, carbon emissions)."
+        }
+    },
+    "output_format": {
+        "processed": "<Processing Level> (e.g., 'Ultra-Processed: NOVA 4')",
+        "harmfulIngredients": ["<List of Harmful Ingredients>"],
+        "beneficialIngredients": ["<List of Beneficial Ingredients>"],
+        "suitableDiets": ["<Suitable Diets>"],
+        "notSuitableDiets": ["<Not Suitable Diets>"],
+        "macroNutrientsScore": {
+            "Proteins": "<Score (0-5)>",
+            "Carbohydrates": "<Score (0-5)>",
+            "Dietary Fiber": "<Score (0-5)>",
+            "Sugars": "<Score (0-5)>",
+            "Fats": "<Score (0-5)>",
+            "Saturated Fats": "<Score (0-5)>",
+            "Trans Fats": "<Score (0-5)>",
+            "Monounsaturated Fats": "<Score (0-5)>",
+            "Polyunsaturated Fats": "<Score (0-5)>",
+            "Omega-3 Fatty Acids": "<Score (0-5)>",
+            "Omega-6 Fatty Acids": "<Score (0-5)>"
+        },
+        "microNutrientsScore": {
+            "Vitamin A": "<Score (0-5)>",
+            "Vitamin E": "<Score (0-5)>",
+            "Vitamin K": "<Score (0-5)>",
+            "B1": "<Score (0-5)>",
+            "B2": "<Score (0-5)>",
+            "B3": "<Score (0-5)>",
+            "B5": "<Score (0-5)>",
+            "B6": "<Score (0-5)>",
+            "B9": "<Score (0-5)>",
+            "Calcium": "<Score (0-5)>",
+            "Iron": "<Score (0-5)>",
+            "Magnesium": "<Score (0-5)>",
+            "Potassium": "<Score (0-5)>",
+            "Sodium": "<Score (0-5)>",
+            "Zinc": "<Score (0-5)>",
+            "Phosphorus": "<Score (0-5)>",
+            "Selenium": "<Score (0-5)>",
+            "Copper": "<Score (0-5)>",
+            "Manganese": "<Score (0-5)>"
+        },
+        "healthScore": "<Overall Score (0-100)>",
+        "addictiveIngredients": ["<List of Addictive Ingredients>"],
+        "hiddenSweeteners": ["<List of Hidden Sweeteners>"],
+        "artificialVsNaturalRatio": {
+            "Natural": "<Integer Only>",
+            "Artificial": "<Integer Only>"
+        },
+        "preservativesAnalysis": ["<List of Preservatives and Their Impact>"],
+        "gutHealthImpact": "<Gut Health Rating>",
+        "freshnessScore": "<Integer Score (1-5)>",
+        "ingredientSource": "<Natural/Synthetic/Organic>",
+        "allergenAlerts": ["<List of Allergens Present>"],
+        "foodDyeWarning": ["<List of Artificial Dyes and Their Effects>"],
+        "comparativeAnalysis": {
+            "Alternative": "<Healthier Alternative>",
+            "Comparison": "<Nutritional Difference>"
+        },
+        "portionImpact": "<Example: 'Drinking 300ml of this drink = Sugar content of a small chocolate bar.'>",
+        "smartSubstitutes": ["<List of Healthier Alternative Foods>"],
+        "environmentalImpact": {
+            "carbonFootprint": "<Clear Explanation Without Emojis>",
+            "sustainabilityScore": "<Integer Score (1-5)>"
+        },
+        "actionableSteps": ["<Step 1>", "<Step 2>", "<Step 3>"]
+    }
+}
+
+}
+`
+
+// @route POST /analyze-food
+// @desc Analyze food based on OCR text & user's health details
+router.post('/analyze-food', async (req, res) => {
+    try {
+        const { userId, extractedText } = req.body;
+
+        // Validate input
+        if (!userId || !extractedText) {
+            return res.status(400).json({ success: false, message: "Missing userId or extractedText." });
+        }
+
+        // Fetch user health details
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found." });
+        }
+
+        // Construct query for ChatGPT API
+        const query = `
+        ${ANALYSIS_PROMPT}  // Make sure to add the prompt content manually
+        User Health Profile:
+        ${JSON.stringify(user.healthDetails)}
+
+        Food Ingredients (Extracted Text):
+        ${extractedText}
+        `;
+
+        // OpenAI API Key from environment variables
+        const openaiApiKey = process.env.OPENAI_API_KEY;
+        if (!openaiApiKey) {
+            return res.status(500).json({ success: false, message: "OpenAI API key is missing." });
+        }
+
+        // Make request to ChatGPT API
+        const response = await axios.post(
+            'https://api.openai.com/v1/chat/completions',
+            {
+                model: "gpt-4",  // Use GPT-4 or GPT-3.5
+                messages: [{ role: "system", content: query }],
+                max_tokens: 1000
+            },
+            {
+                headers: {
+                    "Authorization": `Bearer ${openaiApiKey}`,
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        // Extract the generated structured response
+        const analysisResult = JSON.parse(response.data.choices[0].message.content);
+
+        res.status(200).json({ success: true, analysis: analysisResult });
+    } catch (error) {
+        console.error("❌ Error in food analysis:", error.response?.data || error.message);
+        res.status(500).json({ success: false, message: "Error analyzing food product", error: error.message });
+    }
+});
+
+export default router;
+
+
+
+user.route.js
+import express from 'express';
+import User from '../models/user.model.js';
+
+const router = express.Router();
+
+// Get User's Past Food Scans
+router.get('/:userId/food-scans', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const user = await User.findById(userId).populate("foodScans");
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        console.log("Fetched user data:", user);
+
+        res.json(user.foodScans);
+    } catch (error) {
+        console.error("Error fetching food scans:", error);
+        res.status(500).json({ error: "Failed to fetch past scans" });
+    }
+});
+
+
+export default router;
+
+
+
+
+//login ui 
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+
+export default function AuthPage() {
+    const router = useRouter(); // ✅ Added router for navigation
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [token, setToken] = useState(null);
+    const [user, setUser] = useState(null);
+
+    // ✅ Prevent SSR Issues by Checking localStorage on the Client
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            setToken(localStorage.getItem("token"));
+        }
+    }, []);
+
+    const handleLogin = async () => {
+        if (!email || !password) {
+            alert("Email and Password are required!");
+            return;
+        }
+
+        try {
+            console.log("🔹 Sending Login Request");
+            const res = await axios.post("http://localhost:5001/api/auth/login", { email, password });
+            console.log("✅ Login Response:", res.data);
+
+            setToken(res.data.token);
+            setUser(res.data.user);
+            localStorage.setItem("token", res.data.token);
+            alert("Login successful!");
+            
+            router.push("/dashboard"); // ✅ Redirect to Dashboard after successful login
+        } catch (err) {
+            console.error("❌ Login Error:", err.response?.data || err.message);
+            alert("Login failed: " + (err.response?.data.error || "Unknown error"));
+        }
+    };
+
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6">
+            <h1 className="text-3xl font-semibold text-gray-800 mb-6">Login</h1>
+            <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
+                <input
+                    type="email"
+                    placeholder="Email"
+                    className="w-full p-3 mb-3 border border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black text-lg font-medium"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
+                <input
+                    type="password"
+                    placeholder="Password"
+                    className="w-full p-3 mb-3 border border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black text-lg font-medium"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                />
+                <button 
+                    className="w-full p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-300"
+                    onClick={handleLogin}
+                >
+                    Login
+                </button>
+            </div>
+            {token && (
+                <div className="mt-4 bg-white p-4 rounded-lg shadow-md text-center w-full max-w-sm">
+                    <p className="text-gray-700 font-medium">Logged in as: {user?.name || "Unknown"}</p>
+                </div>
+            )}
+        </div>
+    );
+}
