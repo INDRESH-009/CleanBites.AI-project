@@ -18,7 +18,7 @@ const Navbar = () => {
   // ✅ Logout function
   const handleLogout = () => {
     localStorage.removeItem("token");  // Remove authentication token
-    localStorage.removeItem("userId"); // Remove stored user ID
+    localStorage.removeItem("userId");   // Remove stored user ID
     localStorage.removeItem("profileImage"); // Remove profile image reference
     router.push("/"); // Redirect to home page
   };
@@ -39,6 +39,9 @@ const Navbar = () => {
       <div className={`lg:flex items-center gap-6 ${menuOpen ? "block" : "hidden"} absolute lg:static top-16 left-0 w-full lg:w-auto bg-white shadow-md lg:shadow-none p-4 lg:p-0`}>
         <Link href="/dashboard">
           <span className="text-gray-700 cursor-pointer hover:text-blue-600 font-medium">Scan Food</span>
+        </Link>
+        <Link href="/foodscan-history">
+          <span className="text-gray-700 cursor-pointer hover:text-blue-600 font-medium">Food Scan History</span>
         </Link>
         <Link href="/profile">
           <img

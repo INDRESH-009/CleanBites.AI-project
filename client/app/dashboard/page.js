@@ -50,24 +50,47 @@ export default function DashboardPage() {
         }
 
         setLoading(true);
-        const formData = new FormData();
-        formData.append("file", image);
 
         try {
-            const response = await axios.post("http://localhost:5001/api/vision", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
+            // Step 1: Upload image to Vision API for OCR
+            const visionFormData = new FormData();
+            visionFormData.append("file", image);
+
+            const visionResponse = await axios.post(
+                "http://localhost:5001/api/vision",
+                visionFormData,
+                {
+                    headers: { "Content-Type": "multipart/form-data" },
+                }
+            );
 
             if (!user) {
                 throw new Error("User data not loaded correctly");
             }
 
+            // Step 2: Send the OCR result to the AI analysis endpoint
             const analysisResponse = await axios.post("http://localhost:5001/api/analyze-food", {
-                userId: user?._id,
-                extractedText: response.data.fullText
+                userId: user._id,
+                extractedText: visionResponse.data.fullText
             });
 
-            setAnalysisResult(analysisResponse.data.analysis);
+            const analysisData = analysisResponse.data.analysis;
+            setAnalysisResult(analysisData);
+
+            // Step 3: Store the food scan in the database
+            // Note: extractedText is omitted as per your request.
+            const storeFormData = new FormData();
+            storeFormData.append("foodImage", image);
+            storeFormData.append("userId", user._id);
+            storeFormData.append("analysisData", JSON.stringify(analysisData));
+
+            await axios.post(
+                "http://localhost:5001/api/foodscan/store-analysis",
+                storeFormData,
+                {
+                    headers: { "Content-Type": "multipart/form-data" },
+                }
+            );
         } catch (error) {
             console.error("Error processing image:", error);
             alert("Failed to process the image. Please try again.");
@@ -196,7 +219,6 @@ export default function DashboardPage() {
                     {analysisResult.personalizedAnalysis && (
                         <div className="mb-6">
                             <h3 className="text-xl font-semibold mb-4">Personalized Analysis</h3>
-
                             {/* Medical Condition Impact */}
                             <div className="p-4 border rounded bg-gray-50 mb-4">
                                 <h4 className="font-medium">Medical Condition Impact</h4>
@@ -207,7 +229,6 @@ export default function DashboardPage() {
                                     <strong>Warning:</strong> {analysisResult.personalizedAnalysis.medicalConditionImpact?.warning || "N/A"}
                                 </p>
                             </div>
-
                             {/* Health Goal Impact */}
                             <div className="p-4 border rounded bg-gray-50 mb-4">
                                 <h4 className="font-medium">Health Goal Impact</h4>
@@ -218,7 +239,6 @@ export default function DashboardPage() {
                                     <strong>Goal Alignment Score:</strong> {analysisResult.personalizedAnalysis.healthGoalImpact?.goalAlignmentScore ? `${analysisResult.personalizedAnalysis.healthGoalImpact.goalAlignmentScore} / 100` : "N/A"}
                                 </p>
                             </div>
-
                             {/* Allergen Warnings */}
                             <div className="p-4 border rounded bg-gray-50 mb-4">
                                 <h4 className="font-medium">Allergen Warnings</h4>
@@ -233,7 +253,6 @@ export default function DashboardPage() {
                                     )
                                 }
                             </div>
-
                             {/* Good & Bad Effects */}
                             <div className="p-4 border rounded bg-gray-50 mb-4">
                                 <h4 className="font-medium">Good & Bad Effects</h4>
@@ -264,7 +283,6 @@ export default function DashboardPage() {
                                     </div>
                                 </div>
                             </div>
-
                             {/* Healthier Alternatives */}
                             <div className="p-4 border rounded bg-gray-50 mb-4">
                                 <h4 className="font-medium">Healthier Alternatives</h4>
@@ -282,7 +300,6 @@ export default function DashboardPage() {
                                     <p>No healthier alternatives provided.</p>
                                 )}
                             </div>
-
                             {/* Future Impact */}
                             <div className="p-4 border rounded bg-gray-50">
                                 <h4 className="font-medium">Future Impact</h4>

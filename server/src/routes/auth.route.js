@@ -27,11 +27,10 @@ router.post("/register-step1", async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            isHealthDetailsCompleted: false,  // ✅ Track progress
+            isHealthDetailsCompleted: false,  // ✅ Track signup progress
         });
 
         await newUser.save();
-
         res.status(201).json({ message: "Step 1 Completed! Proceed to Step 2", userId: newUser._id });
 
     } catch (error) {
@@ -40,7 +39,7 @@ router.post("/register-step1", async (req, res) => {
     }
 });
 
-// ✅ Register User (Step 2: Health Details & Calculate Metrics)
+// ✅ Register User (Step 2: Store Health Details & Auto-Calculate Metrics)
 router.post("/register-step2", async (req, res) => {
     try {
         const { userId, age, gender, weight, height, activityLevel, healthGoals } = req.body;
@@ -58,7 +57,7 @@ router.post("/register-step2", async (req, res) => {
         user.healthDetails = { age, gender, weight, height, activityLevel, healthGoals };
         user.isHealthDetailsCompleted = true;
 
-        // ✅ Calculate Health Metrics
+        // ✅ Auto-Calculate BMI, BMR, TDEE, Macronutrients
         const metrics = calculateHealthMetrics({ weight, height, age, gender, activityLevel });
         if (metrics) {
             user.bmi = metrics.bmi;
@@ -105,15 +104,58 @@ router.post("/login", async (req, res) => {
     }
 });
 
-// ✅ Get User Profile (Protected Route)
+// ✅ Get User Profile (Fix Missing Metrics Automatically)
+// ✅ Get User Profile (Force Metrics Update If Missing)
 router.get("/profile", authMiddleware, async (req, res) => {
     try {
-        const user = await User.findById(req.user.userId)
-            .select("-password") // ✅ Exclude password from response
-            .populate("healthDetails"); // ✅ Populate health details
+        let user = await User.findById(req.user.userId).select("-password");
 
         if (!user) {
             return res.status(404).json({ error: "User not found" });
+        }
+
+        // ✅ Debugging: Log current stored metrics
+        console.log("🛠 Checking stored user metrics:", {
+            bmi: user.bmi,
+            bmr: user.bmr,
+            tdee: user.tdee,
+            macronutrients: user.macronutrients
+        });
+
+        // ✅ Auto-Fix Metrics If Missing (Ensure values are not `undefined` or `null`)
+        if (!user.bmi || !user.bmr || !user.tdee || !user.macronutrients) {
+            console.log("⚠️ Missing metrics detected. Recalculating...");
+
+            const metrics = calculateHealthMetrics({
+                weight: user.healthDetails?.weight,
+                height: user.healthDetails?.height,
+                age: user.healthDetails?.age,
+                gender: user.healthDetails?.gender,
+                activityLevel: user.healthDetails?.activityLevel,
+                healthGoals: user.healthDetails?.healthGoals
+            });
+
+            if (metrics) {
+                user.bmi = metrics.bmi;
+                user.bmr = metrics.bmr;
+                user.tdee = metrics.tdee;
+                user.macronutrients = metrics.macronutrients;
+
+                // ✅ Force save to prevent re-triggering calculation
+                await User.updateOne(
+                    { _id: user._id },
+                    {
+                        $set: {
+                            bmi: metrics.bmi,
+                            bmr: metrics.bmr,
+                            tdee: metrics.tdee,
+                            macronutrients: metrics.macronutrients
+                        }
+                    }
+                );
+
+                console.log("✅ Metrics successfully recalculated and saved:", metrics);
+            }
         }
 
         res.json(user);
@@ -123,7 +165,8 @@ router.get("/profile", authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ Logout Route (Fixes String Interpolation Issue)
+
+// ✅ Logout Route
 router.post("/logout", authMiddleware, async (req, res) => {
     try {
         const user = await User.findById(req.user.userId);

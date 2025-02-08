@@ -37,7 +37,7 @@ app.use(express.json());
 // ✅ Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/vision", visionRoutes);
-app.use("/api/food", foodScanRoutes);
+app.use('/api/foodscan', foodScanRoutes);
 app.use("/api/analyze-food", foodAnalysisRoutes); // ✅ Mount AI Analysis Route
 app.use("/api/users", userRoutes);
 app.use("/api", updateHealthRoutes);

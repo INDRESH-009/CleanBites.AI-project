@@ -2,7 +2,7 @@ import express from 'express';
 import FoodScan from '../models/foodScan.model.js';
 import User from '../models/user.model.js';
 import upload from '../middleware/image_upload.middleware.js';
-
+import authMiddleware from '../middleware/auth.middleware.js';
 const router = express.Router();
 
 // Function to remove empty micronutrient values
@@ -15,12 +15,16 @@ const cleanMicronutrientData = (microNutrients) => {
 // Save Food Scan & Link to User
 router.post('/scan', async (req, res) => {
     try {
-        const { userId, foodDetails, imageUrl, analysis } = req.body;
+        const { userId, foodDetails, imageUrl, analysis, extractedText } = req.body;
+
+        // If you want to use foodDetails as extractedText, you can do:
+        // const extractedText = foodDetails;
 
         const newScan = new FoodScan({
             userId,
             foodDetails,
             imageUrl,
+            extractedText, // Now provided in the new scan document
             analysis,
         });
 
@@ -33,9 +37,11 @@ router.post('/scan', async (req, res) => {
 
         res.status(201).json(savedScan);
     } catch (error) {
+        console.error("❌ Error saving scan:", error);
         res.status(500).json({ error: "Failed to save food scan." });
     }
 });
+
 
 router.post('/store-analysis', upload.single('foodImage'), async (req, res) => {
     try {
@@ -68,9 +74,11 @@ router.post('/store-analysis', upload.single('foodImage'), async (req, res) => {
         const newFoodScan = new FoodScan({
             userId,
             imageUrl,
-            extractedText,
-            ...parsedAnalysis
+            analysis: parsedAnalysis
         });
+        
+        
+          
 
         const savedScan = await newFoodScan.save();
 
@@ -85,5 +93,20 @@ router.post('/store-analysis', upload.single('foodImage'), async (req, res) => {
         res.status(500).json({ success: false, message: "Error storing food scan", error: error.message });
     }
 });
+
+// New endpoint: Get Food Scan History for a user
+router.get('/history', authMiddleware, async (req, res) => {
+    try {
+        // The auth middleware sets req.user.userId
+        const userId = req.user.userId;
+        // Find all scans for the user, sorted by creation date (most recent first)
+        const scans = await FoodScan.find({ userId }).sort({ createdAt: -1 });
+        res.json(scans);
+    } catch (error) {
+        console.error("❌ Error fetching food scan history:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 
 export default router;
