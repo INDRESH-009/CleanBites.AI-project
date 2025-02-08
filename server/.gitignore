@@ -26,3 +26,4 @@ uploads/
 
 # Temporary files
 .cache/
+server/*.json
