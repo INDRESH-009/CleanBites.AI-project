@@ -1,31 +1,31 @@
-.env
+# Ignore node_modules (already added twice, so keeping just one entry)
 node_modules/
-# Node modules
-node_modules/
-server/*.json
 
-
-# Environment variables
+# Ignore Environment Variables
 .env
 *.env
 *.local
 
-# Ignore Google Cloud Vision API credentials
-cleanbites-ai-1689dde97a8b.json # Replace with actual filename
+# Ignore Google Cloud Vision API credentials (explicitly ignoring JSON files)
+server/*.json
+!server/config.sample.json  # (If you need a sample config file for reference)
 
-# Logs
+# Ignore Logs
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 *.log
 
-# Build files and backups
+# Ignore Build Files and Temporary Files
 dist/
 uploads/
-.DS_Store
-.vscode/
-.idea/
-
-# Temporary files
 .cache/
-server/*.json
+.DS_Store  # Mac system file
+.vscode/   # VSCode settings
+.idea/     # JetBrains IDE settings
+
+# Ignore Backup and Misc Files
+*.swp  # Vim swap files
+*.swo
+*.swn
+
