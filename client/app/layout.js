@@ -7,8 +7,8 @@ import { usePathname } from "next/navigation";
 export default function RootLayout({ children }) {
   const pathname = usePathname(); // Get the current route
 
-  // Hide Navbar and padding on landing, login, and signup pages
-  const noNavbarPages = ["/", "/auth/login", "/auth/signup"];
+  // Hide Navbar and padding on landing, login, signup, and health signup pages
+  const noNavbarPages = ["/", "/auth/login", "/auth/signup", "/auth/signup/health"];
   const shouldHideNavbar = noNavbarPages.includes(pathname);
 
   return (

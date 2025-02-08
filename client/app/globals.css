@@ -103,12 +103,6 @@ button {
 button:hover {
   transform: scale(1.02);
 }
-/* ✅ Fix input text visibility */
-input, textarea {
-  color: #1f2937 !important; /* Dark gray text */
-  background-color: #ffffff !important; /* White background */
-  caret-color: #2563eb; /* Blue cursor */
-}
 
 /* ✅ Ensure focus styles are visible */
 input:focus, textarea:focus {
