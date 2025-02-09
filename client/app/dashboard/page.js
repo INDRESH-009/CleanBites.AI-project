@@ -107,7 +107,7 @@ export default function DashboardPage() {
     };
 
     return (
-        <div className="flex flex-col items-center min-h-screen bg-gray-100 p-6 w-full">
+        <div className="flex flex-col items-center min-h-screen bg-black p-6 pt-28 w-full">
             <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Upload Food Image</h2>
                 <input
