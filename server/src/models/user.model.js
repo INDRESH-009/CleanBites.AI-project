@@ -7,15 +7,21 @@ const userSchema = new mongoose.Schema({
     isHealthDetailsCompleted: { type: Boolean, default: false },
 
     healthDetails: {
-        age: { type: Number, required: false },
-        gender: { type: String, enum: ["Male", "Female", "Other"], required: false },
-        weight: { type: Number, required: false },
-        height: { type: Number, required: false },
-        activityLevel: { type: String, enum: ["Sedentary", "Lightly Active", "Moderately Active", "Very Active"], required: false },
-        allergies: [{ type: String }],  // ✅ Now properly stored as an array
-        dietaryPreferences: { type: String, enum: ["None", "Vegetarian", "Vegan", "Gluten-Free", "Keto", "Paleo", "Other"], required: false },
-        medicalConditions: [{ type: String }],  // ✅ Now properly stored as an array
-        healthGoals: { type: String, enum: ["Weight Loss", "Muscle Gain", "General Wellness", "Low-Sodium Diet", "Heart Health", "Diabetes Management"], required: false },
+        age: { type: Number },
+        gender: { type: String, enum: ["Male", "Female", "Other"] },
+        weight: { type: Number },
+        height: { type: Number },
+        activityLevel: { type: String, enum: ["Sedentary", "Lightly Active", "Moderately Active", "Very Active"] },
+        allergies: [{ type: String }],  // stored as an array
+        dietaryPreferences: { 
+            type: String, 
+            enum: ["None", "Vegetarian", "Vegan", "Gluten-Free", "Keto", "Paleo", "Other"] 
+        },
+        medicalConditions: [{ type: String }],  // stored as an array
+        healthGoals: { 
+            type: String, 
+            enum: ["Weight Loss", "Muscle Gain", "General Wellness", "Low-Sodium Diet", "Heart Health", "Diabetes Management"] 
+        },
     },
 
     bmi: { type: Number },
@@ -25,10 +31,10 @@ const userSchema = new mongoose.Schema({
         proteins: { type: Number },
         fats: { type: Number },
         carbohydrates: { type: Number }
-    }
+    },
+    // New fields for computed daily recommendations:
+    recommendedSugarIntake: { type: Number },   // in grams per day
+    recommendedSodiumIntake: { type: Number }     // in mg per day
 }, { timestamps: true });
-
-
-
 
 export default mongoose.model("User", userSchema);

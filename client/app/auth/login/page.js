@@ -56,7 +56,7 @@ const Login = () => {
 
         try {
             // ✅ Send login request
-            const res = await axios.post("http://localhost:5001/api/auth/login", { email, password });
+            const res = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/login`, { email, password });
 
             // ✅ Save token & user data in localStorage
             localStorage.setItem("token", res.data.token);

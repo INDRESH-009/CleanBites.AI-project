@@ -35,7 +35,6 @@ function ElegantShape({ className, delay = 0, width = 400, height = 100, rotate 
     );
 }
 
-
 export default function HealthSignup() {
     const [formData, setFormData] = useState({
         age: "",
@@ -48,9 +47,9 @@ export default function HealthSignup() {
         allergies: [],
         medicalConditions: [],
     });
-
     const [userId, setUserId] = useState("");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(""); // New error state
 
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -80,29 +79,87 @@ export default function HealthSignup() {
         }));
     };
 
-    // ✅ Optimized submit function
+    // ✅ Optimized submit function with validations
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError(""); // Clear previous errors
         setLoading(true);
-
-        const response = await fetch("http://localhost:5001/api/auth/register-step2", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...formData, userId }),
-        });
-
-        const data = await response.json();
-        setLoading(false);
-
-        if (response.ok) {
-            // ✅ Directly Redirect to Login Page After Success
-            router.push("/auth/login");
-        } else {
-            // ✅ Show inline error message instead of alert
-            setError(data.message || "Error in Step 2");
+    
+        // Convert numeric fields
+        const age = Number(formData.age);
+        const weight = Number(formData.weight);
+        const height = Number(formData.height);
+    
+        // Validate required fields
+        if (
+            !formData.age ||
+            !formData.gender ||
+            !formData.weight ||
+            !formData.height ||
+            !formData.activityLevel ||
+            !formData.dietaryPreferences ||
+            !formData.healthGoals
+        ) {
+            setError("All fields are required.");
+            setLoading(false);
+            return;
+        }
+    
+        // Validate numeric fields
+        if (isNaN(age) || age <= 0) {
+            setError("Age must be a positive number.");
+            setLoading(false);
+            return;
+        }
+        if (isNaN(weight) || weight <= 0) {
+            setError("Weight must be a positive number.");
+            setLoading(false);
+            return;
+        }
+        if (isNaN(height) || height <= 0) {
+            setError("Height must be a positive number.");
+            setLoading(false);
+            return;
+        }
+    
+        // Validate at least one allergy and medical condition is selected
+        if (formData.allergies.length === 0) {
+            setError("Please select at least one allergy (or select 'None' if applicable).");
+            setLoading(false);
+            return;
+        }
+        if (formData.medicalConditions.length === 0) {
+            setError("Please select at least one medical condition (or select 'None' if applicable).");
+            setLoading(false);
+            return;
+        }
+    
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/register-step2`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ...formData, userId }),
+            });
+    
+            const data = await response.json();
+            setLoading(false);
+    
+            if (response.ok) {
+                // ✅ Store the JWT token & user details
+                localStorage.setItem("token", data.token);
+                localStorage.setItem("userId", data.user._id);
+    
+                // ✅ Redirect to the dashboard
+                router.push("/dashboard");
+            } else {
+                setError(data.message || "Error in Step 2");
+            }
+        } catch (error) {
+            setLoading(false);
+            setError("Something went wrong. Please try again.");
         }
     };
-
+    
 
     // ✅ Form fields array (reusable for mapping inputs)
     const formFields = [
@@ -124,12 +181,10 @@ export default function HealthSignup() {
             {/* Background Gradient */}
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.05] via-transparent to-rose-500/[0.05] blur-3xl" />
 
-
             <div className="relative z-10 w-full max-w-4xl my-12 p-8 mx-4 rounded-xl backdrop-blur-md bg-black/70 shadow-2xl border border-gray-700">
-
                 <h1 className="text-3xl font-bold tracking-tight text-white text-center">Sign Up</h1>
                 <p className="text-gray-500 text-center mb-6">Step 2: Health Details</p>
-
+                {error && <p className="text-red-500 text-center mb-4">{error}</p>}
                 <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
                     {/* Mapped Form Fields */}
                     {formFields.map((field) => (
@@ -195,7 +250,18 @@ export default function HealthSignup() {
                     <TagSelector
                         name="medicalConditions"
                         label="Medical Conditions"
-                        options={["None", "Diabetes", "Hypertension", "High Cholesterol", "Lactose Intolerance", "Celiac Disease", "PCOS", "Thyroid Issues", "Heart Disease", "Kidney Disease"]}
+                        options={[
+                            "None",
+                            "Diabetes",
+                            "Hypertension",
+                            "High Cholesterol",
+                            "Lactose Intolerance",
+                            "Celiac Disease",
+                            "PCOS",
+                            "Thyroid Issues",
+                            "Heart Disease",
+                            "Kidney Disease"
+                        ]}
                         selectedValues={formData.medicalConditions}
                         onTagClick={handleTagClick}
                     />
@@ -241,8 +307,7 @@ const TagSelector = ({ name, label, options, selectedValues, onTagClick }) => (
             {options.map((option) => (
                 <span
                     key={option}
-                    className={`px-3 py-1 text-sm rounded-full cursor-pointer transition ${selectedValues.includes(option) ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300"
-                        }`}
+                    className={`px-3 py-1 text-sm rounded-full cursor-pointer transition ${selectedValues.includes(option) ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300"}`}
                     onClick={() => onTagClick(name, option)}
                 >
                     {option}

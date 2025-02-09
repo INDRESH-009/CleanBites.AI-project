@@ -40,40 +40,79 @@ router.post("/register-step1", async (req, res) => {
 });
 
 // ✅ Register User (Step 2: Store Health Details & Auto-Calculate Metrics)
+// Register User (Step 2: Store Health Details & Auto-Calculate Metrics)
 router.post("/register-step2", async (req, res) => {
     try {
-        const { userId, age, gender, weight, height, activityLevel, healthGoals } = req.body;
-
-        if (!userId || !age || !gender || !weight || !height || !activityLevel || !healthGoals) {
-            return res.status(400).json({ message: "Missing required fields" });
-        }
-
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        // ✅ Store Health Details
-        user.healthDetails = { age, gender, weight, height, activityLevel, healthGoals };
-        user.isHealthDetailsCompleted = true;
-
-        // ✅ Auto-Calculate BMI, BMR, TDEE, Macronutrients
-        const metrics = calculateHealthMetrics({ weight, height, age, gender, activityLevel });
-        if (metrics) {
-            user.bmi = metrics.bmi;
-            user.bmr = metrics.bmr;
-            user.tdee = metrics.tdee;
-            user.macronutrients = metrics.macronutrients;
-        }
-
-        await user.save();
-        res.status(200).json({ message: "Signup completed successfully!", metrics });
-
+      // Now including additional fields (dietaryPreferences, allergies, medicalConditions) if needed.
+      const {
+        userId,
+        age,
+        gender,
+        weight,
+        height,
+        activityLevel,
+        healthGoals,
+        dietaryPreferences,
+        allergies,
+        medicalConditions,
+      } = req.body;
+  
+      // Make sure all required fields are provided
+      if (
+        !userId ||
+        !age ||
+        !gender ||
+        !weight ||
+        !height ||
+        !activityLevel ||
+        !healthGoals ||
+        !dietaryPreferences ||
+        !allergies ||
+        !medicalConditions
+      ) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+  
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+  
+      // Store Health Details (including additional fields)
+      user.healthDetails = {
+        age,
+        gender,
+        weight,
+        height,
+        activityLevel,
+        healthGoals,
+        dietaryPreferences,
+        allergies,
+        medicalConditions,
+      };
+      user.isHealthDetailsCompleted = true;
+  
+      // Auto-Calculate Metrics (BMI, BMR, TDEE, Macronutrients)
+      const metrics = calculateHealthMetrics({ weight, height, age, gender, activityLevel });
+      if (metrics) {
+        user.bmi = metrics.bmi;
+        user.bmr = metrics.bmr;
+        user.tdee = metrics.tdee;
+        user.macronutrients = metrics.macronutrients;
+      }
+  
+      await user.save();
+  
+      // Generate a JWT token so the user is “logged in” immediately.
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+  
+      res.status(200).json({ message: "Signup completed successfully!", metrics, token, user });
     } catch (error) {
-        console.error("❌ Server Error in register-step2:", error);
-        res.status(500).json({ message: "Server Error", error: error.message });
+      console.error("❌ Server Error in register-step2:", error);
+      res.status(500).json({ message: "Server Error", error: error.message });
     }
-});
+  });
+  
 
 // ✅ Login User
 router.post("/login", async (req, res) => {

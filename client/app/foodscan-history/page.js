@@ -295,9 +295,12 @@ const FoodScanHistory = () => {
         alert("Please log in to view your scan history.");
         return;
       }
-      const response = await axios.get("http://localhost:5001/api/foodscan/history", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/foodscan/history`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setScans(response.data);
       setLoading(false);
     } catch (error) {
