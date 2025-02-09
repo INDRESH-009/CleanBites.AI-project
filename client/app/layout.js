@@ -14,24 +14,18 @@ export default function RootLayout({ children }) {
 
   return (
     <html lang="en">
-      <body className="bg-gray-100 flex h-screen">
-        {!shouldHideNavbar ? (
-          <div className="flex w-full h-full">
-            {/* ✅ Sidebar (Left Panel) */}
-            <Sidebar />
+      <body className="bg-gray-100 flex h-screen relative">
+        {!shouldHideNavbar && <Sidebar />} {/* ✅ Sidebar stays fixed */}
 
-            {/* ✅ Right Side (Navbar + Main Content) */}
-            <div className="flex flex-col flex-grow h-full">
-              {/* ✅ Navbar - Now extends fully to the Sidebar */}
-              <Navbar />
+        {/* ✅ Main Content Area - Adjusts for Sidebar */}
+        <div className={`flex flex-col flex-grow h-full overflow-y-auto ${!shouldHideNavbar ? "md:ml-[280px]" : ""}`}>
+          {!shouldHideNavbar && <Navbar />}
 
-              {/* ✅ Main Content */}
-              <main className="flex-grow bg-gray-900 text-white">{children}</main>
-            </div>
-          </div>
-        ) : (
-          <main className="w-full">{children}</main>
-        )}
+          {/* ✅ Content Scrolls Independently */}
+          <main className="flex-grow bg-[#171818] text-white overflow-y-auto">
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );

@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
@@ -11,6 +10,8 @@ const Navbar = ({ isSidebarOpen, setSidebarOpen }) => {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileImage, setProfileImage] = useState("/default-profile.png"); // Default image
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const storedImage = localStorage.getItem("profileImage");
@@ -18,6 +19,23 @@ const Navbar = ({ isSidebarOpen, setSidebarOpen }) => {
       setProfileImage(`/uploads/${storedImage}`);
     }
   }, []);
+
+  // ✅ Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    }
+
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdownOpen]);
 
   // ✅ Logout function
   const handleLogout = () => {
@@ -37,28 +55,39 @@ const Navbar = ({ isSidebarOpen, setSidebarOpen }) => {
         </button>
       </header>
 
-      {/* ✅ Desktop Header - Properly Fixed */}
-      <header className="hidden md:flex fixed top-0 left-[280px] right-0 h-16 bg-black border-b border-gray-600 px-6 items-center justify-between">
-        <span className="text-xl font-bold text-white">Today's Nutritional Breakdown</span>
-
-        <div className="flex items-center gap-6">
-          {/* ✅ Profile Icon - Now Always Visible */}
-          <Link href="/profile">
+      {/* ✅ Desktop Header - Properly Fixed (Removed Text) */}
+      <header className="hidden md:flex fixed top-0 left-[280px] right-0 h-20 bg-black px-6 items-center justify-end z-50">
+        <div className="relative" ref={dropdownRef}>
+          {/* ✅ Profile Avatar (Dropdown Toggle) */}
+          <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2">
             <Avatar className="cursor-pointer bg-gray-200 border border-gray-500 p-1">
               <AvatarImage src={profileImage} alt="User" className="rounded-full" />
               <AvatarFallback className="text-black">U</AvatarFallback>
             </Avatar>
-          </Link>
+          </button>
 
-          {/* ✅ Logout Button - Now Always Visible */}
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="gap-2 bg-gray-700 border-gray-500 hover:bg-gray-600 text-white px-4 py-2"
-          >
-            <LogOut className="w-5 h-5" />
-            Logout
-          </Button>
+          {/* ✅ Profile Dropdown Menu */}
+          {dropdownOpen && (
+            <div className="fixed right-4 top-[70px] w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-xl p-2 z-[9999]">
+              <button
+                onClick={() => {
+                  setDropdownOpen(false);
+                  router.push("/profile");
+                }}
+                className="flex items-center gap-2 p-2 text-white w-full hover:bg-gray-800 rounded"
+              >
+                <User className="w-5 h-5" />
+                View Profile
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 p-2 text-red-400 w-full hover:bg-gray-800 rounded"
+              >
+                <LogOut className="w-5 h-5" />
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </header>
 

@@ -12,7 +12,7 @@ export function Sidebar() {
   return (
     <>
       {/* ✅ Sidebar for Desktop - Always Visible */}
-      <aside className="h-full min-h-screen flex flex-col border-r border-gray-700 bg-black w-[280px] hidden md:flex">
+      <aside className="fixed top-0 left-0 h-full min-h-screen flex flex-col bg-black w-[280px] overflow-y-auto">
         <div className="flex h-16 items-center gap-2 border-gray-700 px-6">
           <Apple className="h-6 w-6" />
           <span className="font-bold text-white">CleanBites AI</span>
