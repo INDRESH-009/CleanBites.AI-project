@@ -26,6 +26,8 @@ pnpm-debug.log*
 
 # Ignore uploads (optional, if temporary files)
 uploads/
+server/cleanbites-ai-*.json
+
 
 # Ignore backup and build files
 dist/
