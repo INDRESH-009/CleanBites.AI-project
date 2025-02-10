@@ -8,6 +8,7 @@ import foodScanRoutes from "./src/routes/foodScan.route.js";
 import foodAnalysisRoutes from "./src/routes/foodAnalysis.route.js"; // ✅ New AI Analysis Route
 import userRoutes from "./src/routes/user.route.js";
 import updateHealthRoutes from "./src/routes/updateHealth.route.js";
+import chatRoutes from "./src/routes/chat.route.js";
 
 
 // Load environment variables
@@ -41,6 +42,7 @@ app.use('/api/foodscan', foodScanRoutes);
 app.use("/api/analyze-food", foodAnalysisRoutes); // ✅ Mount AI Analysis Route
 app.use("/api/users", userRoutes);
 app.use("/api", updateHealthRoutes);
+app.use("/api/chat", chatRoutes); 
 
 // ✅ Root Endpoint
 app.get("/", (req, res) => {
