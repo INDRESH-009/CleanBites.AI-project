@@ -112,7 +112,8 @@ ${extractedText}
   },
   "micros": ["<Micronutrient1>", "<Micronutrient2>", "<Micronutrient3>", "<Micronutrient4>"],
   "harmfulIngredients": [
-    { "name": "<Ingredient Name>", "effect": "<Detailed explanation of the health impact>" }
+    { "name": "<Ingredient Name>", "effect": "<Detailed explanation of the health impact>"},
+     {"name": "<Ingredient Name>", "effect": "<Detailed explanation of the health impact>"},
   ],
   "personalizedAnalysis": {
     "medicalConditionImpact": { "riskMeter": "<low/medium/high>", "warning": "<Detailed personalized warning including the user's name and health conditions>" },
