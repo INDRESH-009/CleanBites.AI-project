@@ -189,6 +189,39 @@ function FoodScanOverlay({ isOpen, onClose, data }) {
                     </div>
                   </div>
 
+                  {/* Consumption Details */}
+                {data.consumption && data.consumption.status !== "pending" && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white">Consumption Details</h3>
+                  <div className="bg-gray-800/50 rounded-lg p-4">
+                    <p className="text-gray-400">
+                      Status: <span className="text-white">{data.consumption.status}</span>
+                    </p>
+                    {data.consumption.status === "consumed" && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div>
+                          <p className="text-gray-400">Carbohydrates Consumed:</p>
+                          <p className="text-white">{data.consumption.consumedMacros?.Carbohydrates || 0} g</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400">Fats Consumed:</p>
+                          <p className="text-white">{data.consumption.consumedMacros?.Fats || 0} g</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400">Proteins Consumed:</p>
+                          <p className="text-white">{data.consumption.consumedMacros?.Proteins || 0} g</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400">Sugar Consumed:</p>
+                          <p className="text-white">{data.consumption.sugarConsumed || 0} g</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+)}
+
+
                   {/* Footer */}
                   <div className="flex items-center justify-between text-sm text-gray-400 pt-4 border-t border-gray-800">
                     <div className="flex items-center gap-2">

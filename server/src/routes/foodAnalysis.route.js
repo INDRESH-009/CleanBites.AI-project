@@ -2,6 +2,8 @@ import express from 'express';
 import axios from 'axios';
 import User from '../models/user.model.js';
 import dotenv from 'dotenv';
+import FoodScan from '../models/foodScan.model.js';
+import { updateFoodConsumption } from '../utils/consumptionTracker.js';
 
 dotenv.config();
 
@@ -9,33 +11,58 @@ const router = express.Router();
 
 router.post('/', async (req, res) => {
     try {
-        const { userId, extractedText } = req.body;
-
-        if (!userId || !extractedText) {
-            return res.status(400).json({ success: false, message: "Missing userId or extractedText." });
+      // 1. Consumption Tracking Integration:
+      // If the request contains a consumptionResponse, update the FoodScan record accordingly.
+      if (req.body.consumptionResponse) {
+        const { foodScanId, consumed, percentage } = req.body.consumptionResponse;
+        if (!foodScanId || typeof consumed === 'undefined') {
+          return res.status(400).json({
+            success: false,
+            message: "Missing foodScanId or consumed flag in consumptionResponse."
+          });
         }
-
-        // Fetch user health details from MongoDB
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ success: false, message: "User not found." });
-        }
-
-        // Extract health details from the user profile
-        const {
-            age, gender, weight, height, activityLevel, medicalConditions, allergies, healthGoals
-        } = user.healthDetails;
-
-        const { bmi, bmr, tdee, macronutrients } = user;
-
-        // OpenAI API Key
-        const openaiApiKey = process.env.OPENAI_API_KEY;
-        if (!openaiApiKey) {
-            return res.status(500).json({ success: false, message: "OpenAI API key is missing." });
-        }
-
-        // Construct the enhanced AI prompt
-        const prompt = `
+        const updatedFoodScan = await updateFoodConsumption(
+          foodScanId,
+          consumed,
+          consumed ? percentage : 0
+        );
+        return res.status(200).json({ success: true, foodScan: updatedFoodScan });
+      }
+  
+      // 2. Otherwise, process the food analysis as before.
+      const { userId, extractedText } = req.body;
+      if (!userId || !extractedText) {
+        return res.status(400).json({ success: false, message: "Missing userId or extractedText." });
+      }
+  
+      // Fetch user health details from MongoDB.
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ success: false, message: "User not found." });
+      }
+  
+      // Extract health details from the user profile.
+      const {
+        age,
+        gender,
+        weight,
+        height,
+        activityLevel,
+        medicalConditions,
+        allergies,
+        healthGoals
+      } = user.healthDetails;
+  
+      const { bmi, bmr, tdee, macronutrients } = user;
+  
+      // OpenAI API Key.
+      const openaiApiKey = process.env.OPENAI_API_KEY;
+      if (!openaiApiKey) {
+        return res.status(500).json({ success: false, message: "OpenAI API key is missing." });
+      }
+  
+      // Construct the enhanced AI prompt
+      const prompt = `
 You are an expert AI food analysis assistant. Your task is to analyze the provided food label text and deliver an in-depth nutritional and environmental analysis that is personalized to the user’s health profile. Use scientifically accurate data and clear reasoning.
 
 ---------------------------
@@ -152,7 +179,7 @@ ${extractedText}
         } catch (error) {
             return res.status(500).json({ success: false, message: "Error parsing AI response.", error: error.message });
         }
-
+        
         res.status(200).json({ success: true, analysis: analysisResult });
 
     } catch (error) {

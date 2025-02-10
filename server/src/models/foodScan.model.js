@@ -1,11 +1,11 @@
-// models/foodScan.model.js
+// server/models/foodScan.model.js
 import mongoose from 'mongoose';
 
 const foodScanSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   imageUrl: { type: String, required: true },
   
-  // Nest the analysis output inside an "analysis" field
+  // Existing analysis field…
   analysis: {
     calories: { type: String, default: null },
     processingLevel: { type: String, default: null },
@@ -61,10 +61,22 @@ const foodScanSchema = new mongoose.Schema({
       }
     }
   },
-  // createdAt field to store date and time of the scan
+  
+  // NEW: Consumption details for the scanned food
+  consumption: {
+    status: { type: String, default: "pending" }, // e.g., "consumed" or "not consumed"
+    percentage: { type: Number, default: 0 },
+    consumedMacros: {
+      Carbohydrates: { type: Number, default: 0 },
+      Fats: { type: Number, default: 0 },
+      Proteins: { type: Number, default: 0 }
+    },
+    sugarConsumed: { type: Number, default: 0 }
+  },
+  
+  // createdAt field
   createdAt: { type: Date, default: Date.now }
 });
 
-// Export the model using ES6 syntax
 const FoodScan = mongoose.model('FoodScan', foodScanSchema);
 export default FoodScan;
