@@ -1,38 +1,32 @@
-// server/src/routes/chat.route.js
-
 import express from "express";
-import jwt from "jsonwebtoken"; // Make sure to install jsonwebtoken
-import connectDB from "../config/db.js"; // Your DB connection helper
+import jwt from "jsonwebtoken";
+import connectDB from "../config/db.js";
 import FoodScan from "../models/foodScan.model.js";
 import User from "../models/user.model.js";
-import { GoogleGenerativeAI } from "@google/generative-ai"; // Gemini SDK
+
+// Import the default export from the OpenAI package (v4 uses a new API)
+import OpenAI from "openai";
 
 const router = express.Router();
 
 router.post("/", async (req, res) => {
   try {
-    // Ensure DB connection
     await connectDB();
 
     const { message } = req.body;
-
-    // Extract and verify JWT from the Authorization header
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       return res.status(401).json({ error: "Missing Authorization header" });
     }
-    const token = authHeader.split(" ")[1]; // Assumes "Bearer <token>"
+    const token = authHeader.split(" ")[1];
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (error) {
       return res.status(401).json({ error: "Invalid token" });
     }
-
-    // Extract user ID from the decoded token (matching the JWT payload from auth routes)
     const userId = decoded.userId;
 
-    // Retrieve the latest food scan for this user (sorted descending by createdAt)
     const latestScan = await FoodScan.findOne({ userId }).sort({ createdAt: -1 });
     if (!latestScan) {
       return res.json({
@@ -40,13 +34,12 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Retrieve the user's health profile
     const user = await User.findById(userId);
     if (!user) {
       return res.json({ answer: "User not found." });
     }
 
-    // Build a context string from the user's health details and latest food scan analysis.
+    // Build a context string using the user's health details and the latest food scan analysis.
     const healthDetails = user.healthDetails || {};
     const allergies = healthDetails.allergies ? healthDetails.allergies.join(", ") : "None";
     const medicalConditions = healthDetails.medicalConditions
@@ -56,6 +49,7 @@ router.post("/", async (req, res) => {
     const context = `
 User Health Profile:
 - Age: ${healthDetails.age || "N/A"}
+- Name: ${user.name || "User"}
 - Gender: ${healthDetails.gender || "N/A"}
 - Weight: ${healthDetails.weight || "N/A"} kg
 - Height: ${healthDetails.height || "N/A"} cm
@@ -81,38 +75,54 @@ Latest Food Scan Analysis:
 - Personalized Analysis: ${latestScan.analysis.personalizedAnalysis ? JSON.stringify(latestScan.analysis.personalizedAnalysis) : "N/A"}
     `;
 
-    // Determine dynamic instruction based on query content.
-    // For recipe queries, instruct the model to produce a detailed recipe with clear formatting.
-    // For detailed queries, instruct for a comprehensive answer.
-    // Otherwise, default to a brief and direct answer.
-    let instruction = "Provide a brief and direct answer.";
-    const lowerMessage = message.toLowerCase();
-    if (lowerMessage.includes("recipe") || lowerMessage.includes("how do i make")) {
-      instruction = `Provide a detailed recipe including ingredients, quantities, and step-by-step preparation instructions tailored for a diabetic vegan diet.
-Format the response as plain text with clear line breaks. 
-Ensure that each ingredient appears on its own line and each instruction step is numbered on a separate line.
-Do not use markdown symbols such as #, *, or -, and avoid producing one continuous line of text.`;
-    } else if (lowerMessage.includes("explain in detail") || lowerMessage.includes("elaborate")) {
-      instruction = "Provide a detailed and comprehensive answer.";
-    }
+    // Detailed instructions for the chatbot.
+    // These instructions aim to produce responses that are personalized, clear, non-redundant, and well-formatted.
+    const detailedInstructions = `
+You are HealthBuddy, a friendly and empathetic chatbot that provides personalized dietary advice based on the user's health profile and food scan analysis. Your responsibilities include:
+- Providing precise guidance on safe portion sizes and macro breakdowns when asked.
+- Advising, for example, that if a food is not strictly contraindicated, a safe portion might be half of a standard serving. 
+- Explaining any analysis terms or ingredient effects in plain, easy-to-understand language.
+- If a user asks for healthy alternatives or recipes, provide a unique, well-formatted list using bullet points (each bullet should start on a new line with a clear line break after it), but do not repeat the same list if it has already been mentioned in a previous reply.
+- Vary how you reference the user's name (if provided) to keep the conversation natural.
+- Respond directly to the user’s specific question. For instance, if the query is about portion size or macros, focus solely on that without redundantly including healthy alternative suggestions unless explicitly asked.
+- Ensure your response is clear, actionable, and supportive.
 
-    // Construct the full prompt with dynamic instructions:
+Remember:
+- Do not include the full context in your final answer.
+- Personalize your response by addressing the user by name occasionally.
+- Use bullet points with line breaks when listing items.
+- Avoid redundant repetition of healthy alternatives in each reply.
+
+Answer the user's query based solely on the provided context and these instructions.
+    `;
+
     const prompt = `
 Context (DO NOT include this context in your final answer):
 ${context}
 
 User Query: ${message}
 
-Instructions: ${instruction} Use the provided context to answer the query without reiterating the context details.
+Instructions: ${detailedInstructions}
     `;
 
     console.log("🔹 Decoded User ID from Token:", decoded.userId);
 
-    // Use the Gemini SDK to generate content
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent(prompt);
-    const answer = result.response.text();
+    // Initialize the OpenAI client using the new v4 API syntax.
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    // Use the Chat Completion API with GPT-3.5-turbo.
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "user", content: prompt },
+      ],
+      max_tokens: 1500,
+      temperature: 0.7,
+    });
+
+    const answer = response.choices[0].message.content.trim();
 
     return res.json({ answer });
   } catch (error) {

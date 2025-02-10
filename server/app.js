@@ -23,7 +23,7 @@ const app = express();
 
 // ✅ Fix CORS issue by applying it globally
 app.use(cors({
-  origin: "http://localhost:3000", // Allow Next.js frontend
+  origin: "http://192.168.217.230:3000", // Allow Next.js frontend
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allowed HTTP methods
   allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
   credentials: true, // Allow credentials (if needed)
