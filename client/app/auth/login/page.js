@@ -64,7 +64,7 @@ const Login = () => {
             localStorage.setItem("profileImage", res.data.user.profileImage || "default-profile.png");
 
             // ✅ Redirect to Dashboard
-            router.push("/dashboard");
+            router.push("/analysis");
         } catch (err) {
             console.error("❌ Login Error:", err.response?.data || err.message);
             setError(err.response?.data?.message || "Invalid email or password");
