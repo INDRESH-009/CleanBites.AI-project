@@ -25,6 +25,7 @@ export default function UploadFoodImage({
   });
 
   return (
+    // Changed "ml-[250px]" to "mx-auto" to center the component horizontally
     <div className="w-full mx-auto mt-32 mb-12 max-w-2xl">
       <div className="rounded-xl bg-gradient-to-br from-gray-900 via-gray-800 to-black p-8">
         <div className="text-center space-y-4">
