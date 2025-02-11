@@ -4,11 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 
+// Import your shadcn/ui components
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
+
 // Import the separated components
 import UploadFoodImage from "./UploadFoodImage";
 import FoodAnalysis from "./FoodAnalysis";
 import ChatFeatures from "./ChatFeatures";
-import ConsumptionSlider from "../components/ConsumptionSlider";
 
 export default function AnalysisPage() {
   const router = useRouter();
@@ -21,18 +24,18 @@ export default function AnalysisPage() {
   const [isClient, setIsClient] = useState(false);
   const [showChat, setShowChat] = useState(false);
 
-  // NEW: State for consumption feature
+  // Consumption feature states
   const [foodScanId, setFoodScanId] = useState(null);
-  const [consumed, setConsumed] = useState(null); // null: no choice; true/false once chosen
-  const [percentage, setPercentage] = useState(0);
+  const [consumed, setConsumed] = useState(null);
+  const [percentage, setPercentage] = useState(20);
   const [updatingConsumption, setUpdatingConsumption] = useState(false);
   const [updateMessage, setUpdateMessage] = useState("");
-
+  const [consumptionComplete, setConsumptionComplete] = useState(false); // vanish bar after submit
 
   const fileInputRef = useRef(null);
   const analysisRef = useRef(null);
 
-  // Helper functions for dynamic styling
+  // Helper styling functions (unchanged)
   const getProgressIndicatorClass = (score) => {
     if (score < 33) return "bg-red-500";
     else if (score < 66) return "bg-yellow-500";
@@ -59,10 +62,12 @@ export default function AnalysisPage() {
     return "default";
   };
 
+  // Ensure we run in client
   useEffect(() => {
     setIsClient(true);
   }, []);
 
+  // Check user token
   useEffect(() => {
     if (!isClient) return;
     const token = localStorage.getItem("token");
@@ -81,36 +86,36 @@ export default function AnalysisPage() {
       });
   }, [router, isClient]);
 
-  // When analysisResult is set, scroll to the top of the FoodAnalysis component.
+  // Scroll to FoodAnalysis when analysis is complete (existing code)
   useEffect(() => {
     if (analysisResult && analysisRef.current) {
-      // Calculate the top position of the FoodAnalysis component.
-      // If you have a fixed navbar overlapping, adjust navbarHeight accordingly.
-      const navbarHeight = 80; // Change this value if necessary
+      const navbarHeight = 140;
       const rect = analysisRef.current.getBoundingClientRect();
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollTop = window.scrollY;
       const targetY = rect.top + scrollTop - navbarHeight;
       window.scrollTo({ top: targetY, behavior: "smooth" });
     }
   }, [analysisResult]);
 
-  // Analysis handler (calls your APIs)
+  // Handle image upload + analysis
   const handleSubmit = async (e) => {
     e.stopPropagation();
     if (!image) {
       alert("Please upload an image");
       return;
     }
-    // Hide upload area and show loader immediately
     setLoading(true);
     setLoaderText("Extracting");
+
     const timeoutId = setTimeout(() => {
       setLoaderText("Analyzing");
     }, 3000);
+
     try {
-      // Step 1: Upload image for OCR
+      // 1) OCR
       const visionFormData = new FormData();
       visionFormData.append("file", image);
+
       const visionResponse = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/vision`,
         visionFormData,
@@ -119,7 +124,7 @@ export default function AnalysisPage() {
 
       if (!user) throw new Error("User data not loaded correctly");
 
-      // Step 2: Analyze the extracted text
+      // 2) Analyze text
       const analysisResponse = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/analyze-food`,
         { userId: user._id, extractedText: visionResponse.data.fullText }
@@ -128,25 +133,36 @@ export default function AnalysisPage() {
       const analysisData = analysisResponse.data.analysis;
       setAnalysisResult(analysisData);
 
-      // Step 3: Store the food scan
+      // =========================
+      // Wrap scrollIntoView in a tiny timeout
+      // =========================
+      setTimeout(() => {
+        if (analysisRef.current) {
+          analysisRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      }, 100);
+
+      // 3) Store the food scan
       const storeFormData = new FormData();
       storeFormData.append("foodImage", image);
       storeFormData.append("userId", user._id);
       storeFormData.append("analysisData", JSON.stringify(analysisData));
+
       const storeResponse = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/foodscan/store-analysis`,
         storeFormData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
+
       setFoodScanId(storeResponse.data.foodScan._id);
-      
-      
     } catch (error) {
       console.error("Error processing image:", error);
       alert("Failed to process the image. Please try again.");
     } finally {
       clearTimeout(timeoutId);
-      // Restore the upload area (with preview intact)
       setLoading(false);
     }
   };
@@ -161,15 +177,14 @@ export default function AnalysisPage() {
     setImage(file);
     setPreview(URL.createObjectURL(file));
   };
-  // NEW: Function to submit consumption update
+
+  // Submit consumption
   const handleConsumptionSubmit = async () => {
-    // Check if the consumed state is defined
     if (consumed === null) {
-      console.error("consumed is not defined. Please select Yes or No before submitting consumption.");
+      console.error("Please select Yes or No before submitting consumption.");
       return;
     }
-  
-    // Prepare and log the payload
+
     const payload = {
       consumptionResponse: {
         foodScanId,
@@ -178,26 +193,37 @@ export default function AnalysisPage() {
       },
     };
     console.log("Sending consumption payload:", payload);
-  
+
     setUpdatingConsumption(true);
     try {
-      const res = await axios.post(
+      await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/foodscan/store-analysis`,
         payload
       );
       setUpdateMessage("Consumption updated successfully!");
+      setConsumptionComplete(true); // vanish
     } catch (error) {
       console.error("Consumption update error:", error);
       setUpdateMessage("Failed to update consumption.");
     }
     setUpdatingConsumption(false);
   };
-  
 
+  // Back button
+  const handleConsumptionBack = () => {
+    setConsumed(null);
+    setPercentage(20);
+    setUpdateMessage("");
+  };
+
+  // Determine if consumption bar is currently displayed
+  // => True if we have analysis + foodScanId + not done yet, and user didn't pick "No"
+  const isConsumptionBarVisible =
+    analysisResult && foodScanId && !consumptionComplete && consumed !== false;
 
   return (
     <div className="w-full relative">
-      {/* Centered container for upload area and loader */}
+      {/* Upload area */}
       <div className="w-full mx-auto mt-32 mb-12 max-w-2xl">
         {loading ? (
           <div
@@ -236,6 +262,8 @@ export default function AnalysisPage() {
           />
         )}
       </div>
+
+      {/* Hidden file input for camera capture */}
       <input
         type="file"
         accept="image/*"
@@ -244,8 +272,10 @@ export default function AnalysisPage() {
         onChange={handleCameraChange}
         style={{ display: "none" }}
       />
+
+      {/* Analysis result */}
       {analysisResult && (
-        <div ref={analysisRef}>
+        <div ref={analysisRef} className="scroll-mt-32">
           <FoodAnalysis
             analysisResult={analysisResult}
             getBadgeClasses={(variant) =>
@@ -263,52 +293,94 @@ export default function AnalysisPage() {
           />
         </div>
       )}
-      {analysisResult && foodScanId && (
-      <div className="mt-8 p-4 border-t border-gray-300">
-        <h2 className="text-xl font-bold">Consumption Tracking</h2>
-        <p>Are you going to have this?</p>
-        <div className="flex gap-4 mt-2">
-  <button
-    onClick={() => setConsumed(true)}
-    className="px-4 py-2 bg-green-500 text-white rounded"
-  >
-    Yes
-  </button>
-  <button
-    onClick={() => setConsumed(false)}
-    className="px-4 py-2 bg-red-500 text-white rounded"
-  >
-    No
-  </button>
-</div>
 
-        {consumed === true && (
-          <div className="mt-4">
-            <ConsumptionSlider
-              value={percentage}
-              onChange={setPercentage}
-              label="How much of it will you have?"
-            />
-          </div>
-        )}
-        {consumed !== null && (
-          <div className="mt-4">
-            <button
-              onClick={handleConsumptionSubmit}
-              disabled={updatingConsumption}
-              className="px-4 py-2 bg-blue-500 text-white rounded"
-            >
-              {updatingConsumption ? "Submitting..." : "Submit Consumption"}
-            </button>
-            {updateMessage && <p className="mt-2 text-sm text-gray-700">{updateMessage}</p>}
-          </div>
-        )}
-      </div>
-      )}    
+      {/* Consumption bar pinned at bottom if not completed and user hasn't said "No" */}
+      {isConsumptionBarVisible && (
+        <div className="fixed bottom-0 left-0 right-0 z-20 flex items-center justify-between gap-4 border-t bg-white px-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full py-2 text-gray-800">
+            {/* "Consumption Tracking" heading, centered on mobile */}
+            <h2 className="text-lg font-semibold text-gray-900 text-center sm:text-left">
+              Consumption Tracking
+            </h2>
 
-      {analysisResult && (
-        <ChatFeatures showChat={showChat} setShowChat={setShowChat} />
+            {/* Step logic: Are you going to have this? / How much? */}
+            {consumed === null && (
+              <div className="flex flex-col sm:flex-row sm:items-center md:h-16 sm:gap-4 mt-2 sm:mt-0">
+                <p className="text-sm text-gray-500 text-center sm:text-left mb-2 sm:mb-0">
+                  Are you going to have this?
+                </p>
+                <div className="flex flex-row justify-center gap-2">
+                  <Button
+                    className="bg-blue-600 text-white hover:text-white hover:bg-blue-700"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setConsumed(true)}
+                  >
+                    Yes
+                  </Button>
+                  <Button
+                    className="bg-red-600 hover:bg-red-700 hover:text-white text-white"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setConsumed(false)}
+                  >
+                    No
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {consumed === true && (
+              <div className="flex flex-col sm:flex-row sm:items-center md:h-16 sm:gap-4 mt-2 sm:mt-0">
+                <p className="text-sm text-center sm:text-left mb-2 sm:mb-0">
+                  How much of it will you have?
+                </p>
+                <div className="flex flex-row items-center gap-2 justify-center sm:justify-start mb-2 sm:mb-0">
+                  <Slider
+                    defaultValue={[percentage]}
+                    max={100}
+                    step={1}
+                    className="w-36 sm:w-60"
+                    onValueChange={(value) => {
+                      setPercentage(value[0]);
+                    }}
+                  />
+                  <span className="min-w-[3rem] text-sm font-medium">
+                    {percentage}%
+                  </span>
+                </div>
+                <div className="flex flex-row items-center gap-2 justify-center sm:justify-start">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleConsumptionBack}
+                    disabled={updatingConsumption}
+                  >
+                    Back
+                  </Button>
+                  <Button size="sm" onClick={handleConsumptionSubmit}>
+                    {updatingConsumption ? "Submitting..." : "Submit"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
+
+      {/* After submission or if user chooses "No", bar vanishes */}
+      {updateMessage && (
+        <p className="text-center mt-4 text-sm text-gray-700">{updateMessage}</p>
+      )}
+
+      {/* ChatFeature always visible now */}
+      {analysisResult && (
+        <ChatFeatures
+          showChat={showChat}
+          setShowChat={setShowChat}
+        />
+      )}
+
       <style jsx>{`
         .loading svg polyline {
           fill: none;
@@ -345,11 +417,6 @@ export default function AnalysisPage() {
         }
         .dot:nth-child(3) {
           animation-delay: 0.4s;
-        }
-        @keyframes blink {
-          0% { opacity: 0; }
-          50% { opacity: 1; }
-          100% { opacity: 0; }
         }
       `}</style>
     </div>

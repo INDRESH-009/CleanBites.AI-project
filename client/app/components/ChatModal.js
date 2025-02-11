@@ -39,7 +39,7 @@ export default function ChatModal({ onClose }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": token ? `Bearer ${token}` : "",
+          Authorization: token ? `Bearer ${token}` : "",
         },
         body: JSON.stringify({ message: textToSend }),
       });
@@ -59,7 +59,30 @@ export default function ChatModal({ onClose }) {
   };
 
   return (
-    <Card className="fixed bottom-6 right-6 w-[440px] h-[600px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <Card
+      /* 
+        Make card flex-col so header is top, content is middle (scrollable),
+        and footer is at the bottom. 
+        Also handle responsiveness for mobile vs. desktop.
+      */
+      className="
+        z-30
+        fixed 
+        bottom-2 
+        right-2 
+        sm:bottom-6 
+        sm:right-6 
+        flex 
+        flex-col 
+        w-[90vw] 
+        h-[90vh] 
+        sm:w-[440px] 
+        sm:h-[600px] 
+        bg-background/95 
+        backdrop-blur 
+        supports-[backdrop-filter]:bg-background/60
+      "
+    >
       <CardHeader className="flex flex-row items-center justify-between p-4">
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5" />
@@ -70,24 +93,33 @@ export default function ChatModal({ onClose }) {
           <span className="sr-only">Close</span>
         </Button>
       </CardHeader>
-      <CardContent className="p-4 flex flex-col">
-        {/* Scrollable Chat Messages */}
-        <ScrollArea ref={scrollAreaRef} className="h-[420px] pr-4 flex flex-col justify-end">
+
+      {/* 
+        CardContent is the middle, scrollable section.
+        We give it flex-1 so it expands to fill remaining space, 
+        then inside we have a ScrollArea for the chat messages.
+      */}
+      <CardContent className="p-4 pt-0 flex-1 flex flex-col">
+        <ScrollArea ref={scrollAreaRef} className="flex-1 pr-4 flex flex-col justify-end">
           {chatHistory.map((msg, index) => (
             <div
               key={index}
-              className={`mb-4 flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+              className={`mb-4 flex ${
+                msg.sender === "user" ? "justify-end" : "justify-start"
+              }`}
             >
               <div
                 className={`rounded-2xl px-4 py-2 max-w-[85%] text-sm ${
-                  msg.sender === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                  msg.sender === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
                 }`}
               >
                 <strong>{msg.sender === "bot" ? "Bot:" : "You:"}</strong> {msg.text}
               </div>
             </div>
           ))}
-          
+
           {/* Loading Animation */}
           {loading && (
             <div className="flex justify-start">
@@ -96,12 +128,12 @@ export default function ChatModal({ onClose }) {
                   <div
                     className="h-2 w-2 animate-bounce rounded-full bg-foreground/50"
                     style={{ animationDelay: "-0.3s" }}
-                  ></div>
+                  />
                   <div
                     className="h-2 w-2 animate-bounce rounded-full bg-foreground/50"
                     style={{ animationDelay: "-0.15s" }}
-                  ></div>
-                  <div className="h-2 w-2 animate-bounce rounded-full bg-foreground/50"></div>
+                  />
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-foreground/50" />
                 </div>
               </div>
             </div>
@@ -109,6 +141,10 @@ export default function ChatModal({ onClose }) {
         </ScrollArea>
       </CardContent>
 
+      {/*
+        CardFooter is pinned at the bottom of the card 
+        because the card is flex-col and CardContent took up remaining space.
+      */}
       <CardFooter className="p-4 pt-2 flex flex-col items-center gap-2">
         {/* Sample Questions Above the Input */}
         <div className="flex justify-center gap-2 w-full">
