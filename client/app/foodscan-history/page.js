@@ -37,6 +37,16 @@ const computeWidth = (value, max) => {
 function FoodScanOverlay({ isOpen, onClose, data }) {
   // Convert sugar total to a number using parseFloat (fallback to 0)
   const sugarTotal = parseFloat(data.sugar.total) || 0;
+  
+  // ✅ Add this to ensure `consumedMacros` always has default values
+  const consumedMacros = data.consumption?.consumedMacros || {
+    Carbohydrates: 0,
+    Fats: 0,
+    Proteins: 0,
+    sugarConsumed: 0,
+  };
+
+  
   return (
     <AnimatePresence>
       {isOpen && (
@@ -189,37 +199,24 @@ function FoodScanOverlay({ isOpen, onClose, data }) {
                     </div>
                   </div>
 
-                  {/* Consumption Details */}
-                {data.consumption && data.consumption.status !== "pending" && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-white">Consumption Details</h3>
-                  <div className="bg-gray-800/50 rounded-lg p-4">
-                    <p className="text-gray-400">
-                      Status: <span className="text-white">{data.consumption.status}</span>
-                    </p>
-                    {data.consumption.status === "consumed" && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        <div>
-                          <p className="text-gray-400">Carbohydrates Consumed:</p>
-                          <p className="text-white">{data.consumption.consumedMacros?.Carbohydrates || 0} g</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400">Fats Consumed:</p>
-                          <p className="text-white">{data.consumption.consumedMacros?.Fats || 0} g</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400">Proteins Consumed:</p>
-                          <p className="text-white">{data.consumption.consumedMacros?.Proteins || 0} g</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400">Sugar Consumed:</p>
-                          <p className="text-white">{data.consumption.sugarConsumed || 0} g</p>
-                        </div>
-                      </div>
+                                   {/* ✅ Consumed Macros Section */}
+                                   <div className="consumed-macros">
+                    <h3 className="text-lg font-semibold text-white">
+                      Consumed Macros
+                    </h3>
+                    {data.consumption && data.consumption.consumedMacros ? (
+                      <>
+                        <p>Carbohydrates: {consumedMacros.Carbohydrates}g</p>
+                        <p>Fats: {consumedMacros.Fats}g</p>
+                        <p>Proteins: {consumedMacros.Proteins}g</p>
+                        <p>Sugar Consumed: {data.consumption.sugarConsumed}g</p>
+                      </>
+                    ) : (
+                      <p className="text-gray-400">No macro consumption data available.</p>
                     )}
                   </div>
-                </div>
-)}
+
+
 
 
                   {/* Footer */}
@@ -390,7 +387,19 @@ const FoodScanHistory = () => {
     },
     allergens: scan.analysis?.allergens || [],
     timestamp: scan.createdAt,
-  });
+
+    // ✅ Added Consumed Macros Mapping
+    consumption: {
+      consumedMacros: {
+        Carbohydrates: scan.consumption?.consumedMacros?.Carbohydrates || 0,
+        Fats: scan.consumption?.consumedMacros?.Fats || 0,
+        Proteins: scan.consumption?.consumedMacros?.Proteins || 0,
+        sugarConsumed: scan.consumption?.sugarConsumed || 0,
+      },
+    },
+});
+
+  
 
   if (loading) {
     return (
@@ -399,6 +408,7 @@ const FoodScanHistory = () => {
       </p>
     );
   }
+
 
   return (
     <div className="min-h-screen p-6 bg-gradient-to-br from-[#0a0a0a] via-[#121212] to-black">
@@ -521,6 +531,8 @@ const FoodScanHistory = () => {
       </div>
       {modalOpen && selectedScan && (
         <FoodScanOverlay
+
+        
           isOpen={modalOpen}
           onClose={() => {
             setModalOpen(false);

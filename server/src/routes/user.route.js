@@ -1,6 +1,8 @@
 import express from "express";
 import User from "../models/user.model.js";
 import mongoose from "mongoose";
+import authMiddleware from "../middleware/auth.middleware.js";
+
 
 const router = express.Router();
 
@@ -61,6 +63,14 @@ router.put("/:userId", async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 });
+router.get("/me", authMiddleware, async (req, res) => {
+    try {
+      const user = await User.findById(req.user.id);
+      res.json(user);
+    } catch (err) {
+      res.status(500).json({ error: "Error fetching user data" });
+    }
+  });
 
 export default router;
 
