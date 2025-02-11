@@ -8,6 +8,7 @@ import axios from "axios";
 import UploadFoodImage from "./UploadFoodImage";
 import FoodAnalysis from "./FoodAnalysis";
 import ChatFeatures from "./ChatFeatures";
+import ConsumptionSlider from "../components/ConsumptionSlider";
 
 export default function AnalysisPage() {
   const router = useRouter();
@@ -19,6 +20,14 @@ export default function AnalysisPage() {
   const [loaderText, setLoaderText] = useState("");
   const [isClient, setIsClient] = useState(false);
   const [showChat, setShowChat] = useState(false);
+
+  // NEW: State for consumption feature
+  const [foodScanId, setFoodScanId] = useState(null);
+  const [consumed, setConsumed] = useState(null); // null: no choice; true/false once chosen
+  const [percentage, setPercentage] = useState(0);
+  const [updatingConsumption, setUpdatingConsumption] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState("");
+
 
   const fileInputRef = useRef(null);
   const analysisRef = useRef(null);
@@ -124,11 +133,14 @@ export default function AnalysisPage() {
       storeFormData.append("foodImage", image);
       storeFormData.append("userId", user._id);
       storeFormData.append("analysisData", JSON.stringify(analysisData));
-      await axios.post(
+      const storeResponse = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/foodscan/store-analysis`,
         storeFormData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
+      setFoodScanId(storeResponse.data.foodScan._id);
+      
+      
     } catch (error) {
       console.error("Error processing image:", error);
       alert("Failed to process the image. Please try again.");
@@ -149,6 +161,39 @@ export default function AnalysisPage() {
     setImage(file);
     setPreview(URL.createObjectURL(file));
   };
+  // NEW: Function to submit consumption update
+  const handleConsumptionSubmit = async () => {
+    // Check if the consumed state is defined
+    if (consumed === null) {
+      console.error("consumed is not defined. Please select Yes or No before submitting consumption.");
+      return;
+    }
+  
+    // Prepare and log the payload
+    const payload = {
+      consumptionResponse: {
+        foodScanId,
+        consumed,
+        percentage: consumed ? percentage : 0,
+      },
+    };
+    console.log("Sending consumption payload:", payload);
+  
+    setUpdatingConsumption(true);
+    try {
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/foodscan/store-analysis`,
+        payload
+      );
+      setUpdateMessage("Consumption updated successfully!");
+    } catch (error) {
+      console.error("Consumption update error:", error);
+      setUpdateMessage("Failed to update consumption.");
+    }
+    setUpdatingConsumption(false);
+  };
+  
+
 
   return (
     <div className="w-full relative">
@@ -218,6 +263,49 @@ export default function AnalysisPage() {
           />
         </div>
       )}
+      {analysisResult && foodScanId && (
+      <div className="mt-8 p-4 border-t border-gray-300">
+        <h2 className="text-xl font-bold">Consumption Tracking</h2>
+        <p>Are you going to have this?</p>
+        <div className="flex gap-4 mt-2">
+  <button
+    onClick={() => setConsumed(true)}
+    className="px-4 py-2 bg-green-500 text-white rounded"
+  >
+    Yes
+  </button>
+  <button
+    onClick={() => setConsumed(false)}
+    className="px-4 py-2 bg-red-500 text-white rounded"
+  >
+    No
+  </button>
+</div>
+
+        {consumed === true && (
+          <div className="mt-4">
+            <ConsumptionSlider
+              value={percentage}
+              onChange={setPercentage}
+              label="How much of it will you have?"
+            />
+          </div>
+        )}
+        {consumed !== null && (
+          <div className="mt-4">
+            <button
+              onClick={handleConsumptionSubmit}
+              disabled={updatingConsumption}
+              className="px-4 py-2 bg-blue-500 text-white rounded"
+            >
+              {updatingConsumption ? "Submitting..." : "Submit Consumption"}
+            </button>
+            {updateMessage && <p className="mt-2 text-sm text-gray-700">{updateMessage}</p>}
+          </div>
+        )}
+      </div>
+      )}    
+
       {analysisResult && (
         <ChatFeatures showChat={showChat} setShowChat={setShowChat} />
       )}

@@ -1,29 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Bot, Send, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function ChatModal({ onClose }) {
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const scrollAreaRef = useRef(null);
 
-  const handleSend = async () => {
-    if (!message.trim()) return;
-    const userMessage = { sender: "user", text: message };
-    setChatHistory([...chatHistory, userMessage]);
+  // Auto-scroll to bottom when new messages arrive.
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  }, [chatHistory]);
+
+  /**
+   * handleSend accepts an optional second parameter "prebuiltText".
+   * If provided, it immediately sends that text; otherwise, it uses the value from state.
+   */
+  const handleSend = async (e, prebuiltText) => {
+    if (e) e.preventDefault();
+    const textToSend = prebuiltText !== undefined ? prebuiltText : message;
+    if (!textToSend.trim()) return;
+
+    // Add the user's message to the chat history.
+    setChatHistory((prev) => [...prev, { sender: "user", text: textToSend }]);
     setLoading(true);
-    try {
-      // Retrieve the JWT token from localStorage (or your auth provider)
-      const token = localStorage.getItem("token");
 
+    try {
+      const token = localStorage.getItem("token");
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Pass the token in the Authorization header
           "Authorization": token ? `Bearer ${token}` : "",
         },
-        body: JSON.stringify({ message }), // Only the user's message is sent; backend adds context.
+        body: JSON.stringify({ message: textToSend }),
       });
       const data = await res.json();
       const botMessage = { sender: "bot", text: data.answer };
@@ -34,128 +52,96 @@ export default function ChatModal({ onClose }) {
         { sender: "bot", text: "Error: Unable to fetch response" },
       ]);
     }
-    setMessage("");
+
+    // Clear the input only if the user typed the message.
+    if (prebuiltText === undefined) setMessage("");
     setLoading(false);
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: "1rem",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "90%",
-        maxWidth: "600px",
-        backgroundColor: "#f4f4f4",
-        borderRadius: "8px",
-        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-        padding: "1rem",
-        zIndex: 1000,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1rem",
-          borderBottom: "1px solid #ddd",
-          paddingBottom: "0.5rem",
-        }}
-      >
-        <h2 style={{ margin: 0, color: "#333", fontSize: "1.25rem" }}>Chat</h2>
-        <button
-          onClick={onClose}
-          style={{
-            backgroundColor: "#e74c3c",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-            padding: "0.5rem 1rem",
-            cursor: "pointer",
-          }}
-        >
-          Close
-        </button>
-      </div>
-      <div
-        style={{
-          flexGrow: 1,
-          overflowY: "auto",
-          marginBottom: "1rem",
-          padding: "0.75rem",
-          backgroundColor: "#fff",
-          border: "1px solid #ddd",
-          borderRadius: "4px",
-          maxHeight: "300px",
-        }}
-      >
-        {chatHistory.map((msg, index) => (
-          <div
-            key={index}
-            style={{
-              textAlign: msg.sender === "bot" ? "left" : "right",
-              marginBottom: "0.75rem",
-            }}
-          >
+    <Card className="fixed bottom-6 right-6 w-[440px] h-[600px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <CardHeader className="flex flex-row items-center justify-between p-4">
+        <div className="flex items-center gap-2">
+          <Bot className="h-5 w-5" />
+          <span className="font-semibold text-lg">Chat</span>
+        </div>
+        <Button variant="ghost" size="icon" onClick={onClose}>
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </Button>
+      </CardHeader>
+      <CardContent className="p-4 flex flex-col">
+        {/* Scrollable Chat Messages */}
+        <ScrollArea ref={scrollAreaRef} className="h-[420px] pr-4 flex flex-col justify-end">
+          {chatHistory.map((msg, index) => (
             <div
-              style={{
-                display: "inline-block",
-                backgroundColor: msg.sender === "bot" ? "#ecf0f1" : "#3498db",
-                color: msg.sender === "bot" ? "#2c3e50" : "#fff",
-                padding: "0.5rem 0.75rem",
-                borderRadius: "12px",
-                maxWidth: "80%",
-                wordBreak: "break-word",
-              }}
+              key={index}
+              className={`mb-4 flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
             >
-              <strong>{msg.sender === "bot" ? "Bot" : "You"}:</strong>{" "}
-              {msg.text}
+              <div
+                className={`rounded-2xl px-4 py-2 max-w-[85%] text-sm ${
+                  msg.sender === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                }`}
+              >
+                <strong>{msg.sender === "bot" ? "Bot:" : "You:"}</strong> {msg.text}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type your message..."
-          style={{
-            flex: 1,
-            padding: "0.75rem",
-            fontSize: "1rem",
-            border: "1px solid #ddd",
-            borderRadius: "4px",
-            marginRight: "0.5rem",
-            outline: "none",
-            color: "#333",
-          }}
-        />
-        <button
-          onClick={handleSend}
-          disabled={loading}
-          style={{
-            padding: "0.75rem 1.25rem",
-            fontSize: "1rem",
-            backgroundColor: "#27ae60",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          {loading ? "Sending..." : "Send"}
-        </button>
-      </div>
-    </div>
+          ))}
+          
+          {/* Loading Animation */}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="rounded-2xl bg-muted px-4 py-2 text-sm">
+                <div className="flex gap-2">
+                  <div
+                    className="h-2 w-2 animate-bounce rounded-full bg-foreground/50"
+                    style={{ animationDelay: "-0.3s" }}
+                  ></div>
+                  <div
+                    className="h-2 w-2 animate-bounce rounded-full bg-foreground/50"
+                    style={{ animationDelay: "-0.15s" }}
+                  ></div>
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-foreground/50"></div>
+                </div>
+              </div>
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
+
+      <CardFooter className="p-4 pt-2 flex flex-col items-center gap-2">
+        {/* Sample Questions Above the Input */}
+        <div className="flex justify-center gap-2 w-full">
+          <button
+            onClick={() => handleSend(null, "What’s a healthy portion?")}
+            className="px-3 py-1 text-sm bg-gray-700 text-white rounded-full hover:bg-gray-600 transition"
+          >
+            What’s a healthy portion?
+          </button>
+          <button
+            onClick={() => handleSend(null, "Suggest a healthy recipe")}
+            className="px-3 py-1 text-sm bg-gray-700 text-white rounded-full hover:bg-gray-600 transition"
+          >
+            Suggest a healthy recipe
+          </button>
+        </div>
+
+        {/* Chat Input and Send Button */}
+        <form onSubmit={(e) => handleSend(e)} className="flex w-full items-center space-x-2">
+          <Input
+            id="message"
+            placeholder="Type your message..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            className="flex-1 bg-background"
+            disabled={loading}
+          />
+          <Button type="submit" size="icon" disabled={loading || !message.trim()}>
+            <Send className="h-4 w-4" />
+            <span className="sr-only">Send</span>
+          </Button>
+        </form>
+      </CardFooter>
+    </Card>
   );
 }
