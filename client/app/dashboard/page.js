@@ -16,6 +16,8 @@ export default function DashboardPage() {
     Proteins: 0,
     Sugar: 0,
   });
+  const [foodRecommendations, setFoodRecommendations] = useState(null);
+  const [harmfulIngredients, setHarmfulIngredients] = useState(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -91,8 +93,38 @@ export default function DashboardPage() {
         Sugar: parseFloat(totalSugar.toFixed(2)),
       });
 
+      // Fetch food recommendations and harmful ingredient alerts
+      fetchFoodRecommendations(userRes.data.healthDetails);
+
     } catch (error) {
       console.error("❌ Error fetching data:", error);
+    }
+  };
+
+  const fetchFoodRecommendations = async (healthDetails) => {
+    try {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/foodAnalysis/getRecommendations`, { healthDetails });
+  
+      console.log('Full API Response:', response.data);
+  
+      if (response.data.success && response.data.result && typeof response.data.result === 'object') {
+        const { beneficialFoods, harmfulIngredients } = response.data.result;
+  
+        // Set food recommendations (beneficial foods)
+        setFoodRecommendations(beneficialFoods || "No food recommendations available.");
+  
+        // If harmfulIngredients contains foods to avoid, render them in the harmful ingredients section
+        if (harmfulIngredients) {
+          // If the harmful ingredients part contains foods to avoid, add them to the harmful ingredients section
+          setHarmfulIngredients(harmfulIngredients || "No harmful ingredients available.");
+        } else {
+          setHarmfulIngredients("No harmful ingredients available.");
+        }
+      } else {
+        console.error("❌ Error: Invalid data format or missing result");
+      }
+    } catch (error) {
+      console.error("❌ Error fetching food recommendations:", error);
     }
   };
 
@@ -138,6 +170,38 @@ export default function DashboardPage() {
             </p>
           </div>
         ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+        {/* Food Recommendations */}
+        <div className="p-4 bg-gray-800 rounded-lg">
+          <h2 className="text-lg font-semibold">Food Recommendations</h2>
+          {foodRecommendations ? (
+            <div className="space-y-4">
+              {/* Render the beneficial foods list */}
+              {foodRecommendations.split("\n").map((recommendation, index) => (
+                <p key={index}>{recommendation}</p>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-400">Loading food recommendations...</p>
+          )}
+        </div>
+
+        {/* Harmful Ingredients Alert */}
+        <div className="p-4 bg-gray-800 rounded-lg">
+          <h2 className="text-lg font-semibold">Harmful Ingredients Alert</h2>
+          {harmfulIngredients ? (
+            <div className="space-y-4">
+              {/* Render harmful ingredients or foods to avoid */}
+              {harmfulIngredients.split("\n").map((ingredient, index) => (
+                <p key={index} className="text-red-400">{ingredient}</p>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-400">Loading harmful ingredient alerts...</p>
+          )}
+        </div>
       </div>
 
       {/* Food Consumption History */}

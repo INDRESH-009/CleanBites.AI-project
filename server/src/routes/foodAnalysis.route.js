@@ -1,7 +1,7 @@
 import express from 'express';
 import axios from 'axios';
-import User from '../models/user.model.js';
 import dotenv from 'dotenv';
+import User from '../models/user.model.js';
 import FoodScan from '../models/foodScan.model.js';
 import { updateFoodConsumption } from '../utils/consumptionTracker.js';
 
@@ -9,17 +9,64 @@ dotenv.config();
 
 const router = express.Router();
 
-router.get('/store-analysis', (req, res) => {
-    res.send("This endpoint expects a POST request. Please send your data using POST.");
-  });
+// Endpoint for recommendation fetch based on user health details
+router.post('/getRecommendations', async (req, res) => {
+  const { healthDetails } = req.body; // healthDetails should be the user's health information
 
+  const openAIRequestBody = {
+    model: "gpt-3.5-turbo",
+    messages: [
+      {
+        role: "system",
+        content: "You are a health and nutrition assistant. Based on the health details, suggest foods that are beneficial and harmful ingredients to avoid."
+      },
+      {
+        role: "user",
+        content: JSON.stringify(healthDetails) // Health details to guide recommendations
+      }
+    ]
+  };
+
+  try {
+    const response = await axios.post('https://api.openai.com/v1/chat/completions', openAIRequestBody, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` // Use the OpenAI API key from environment variables
+      }
+    });
+
+    // Get the response content from OpenAI
+    const recommendationsText = response.data.choices[0].message.content;
+
+    // Split the response into two parts: Beneficial foods and Harmful ingredients
+    const [foodRecommendations, harmfulIngredients] = recommendationsText.split("Harmful Ingredients to Avoid:");
+
+    // Prepare the response as separate objects for food recommendations and harmful ingredients
+    const result = {
+      beneficialFoods: foodRecommendations.trim(),
+      harmfulIngredients: harmfulIngredients ? harmfulIngredients.trim() : null
+    };
+
+    // Send separate results for beneficial foods and harmful ingredients
+    res.json({ success: true, result });
+
+  } catch (error) {
+    console.error('Error fetching OpenAI response:', error);
+    res.status(500).send('Error fetching recommendations');
+  }
+});
+
+// Store food analysis data
+router.get('/store-analysis', (req, res) => {
+  res.send("This endpoint expects a POST request. Please send your data using POST.");
+});
+
+// Main analysis route (including consumption tracking)
 router.post('/', async (req, res) => {
   try {
     // 1. Consumption Tracking Integration:
-    // If the request contains a consumptionResponse, update the FoodScan record accordingly.
     if (req.body.consumptionResponse) {
       let consumptionData;
-      // If consumptionResponse is received as a JSON string, parse it.
       if (typeof req.body.consumptionResponse === 'string') {
         try {
           consumptionData = JSON.parse(req.body.consumptionResponse);
