@@ -28,7 +28,7 @@ export default function FoodAnalysis({
 
   return (
     <section className="py-6 scroll-mt-20">
-      <Card className="w-full max-w-4xl mx-auto bg-gradient-to-br from-purple-50 to-pink-50 overflow-hidden mt-6">
+      <Card className="w-full mb-16 max-w-4xl mx-auto bg-gradient-to-br from-purple-50 to-pink-50 overflow-hidden mt-6">
         <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
           <CardTitle className="text-2xl font-bold">AI Food Analysis</CardTitle>
           <CardDescription className="text-purple-100">

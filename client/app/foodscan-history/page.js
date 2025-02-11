@@ -209,7 +209,7 @@ function FoodScanOverlay({ isOpen, onClose, data }) {
                         <p>Carbohydrates: {consumedMacros.Carbohydrates}g</p>
                         <p>Fats: {consumedMacros.Fats}g</p>
                         <p>Proteins: {consumedMacros.Proteins}g</p>
-                        <p>Sugar Consumed: {data.consumption.sugarConsumed}g</p>
+                        
                       </>
                     ) : (
                       <p className="text-gray-400">No macro consumption data available.</p>
