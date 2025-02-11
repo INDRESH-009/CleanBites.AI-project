@@ -28,7 +28,7 @@ export default function FoodAnalysis({
 
   return (
     <section className="py-6 scroll-mt-20">
-      <Card className="w-full mb-16 max-w-4xl mx-auto bg-gradient-to-br from-purple-50 to-pink-50 overflow-hidden mt-6">
+      <Card className="w-full max-w-4xl mx-auto bg-gradient-to-br from-purple-50 to-pink-50 overflow-hidden mt-6">
         <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
           <CardTitle className="text-2xl font-bold">AI Food Analysis</CardTitle>
           <CardDescription className="text-purple-100">
@@ -60,8 +60,7 @@ export default function FoodAnalysis({
                 <h3 className="text-lg font-semibold mb-2">Health Score</h3>
                 <Progress
                   value={analysisResult.healthScore || 0}
-                  className="h-3 bg-gray-200"
-                  indicatorClassName={getProgressIndicatorClass(analysisResult.healthScore || 0)}
+                  className={`h-3 bg-gray-200 ${getProgressIndicatorClass(analysisResult.healthScore || 0)}`}
                 />
                 <p className="text-right text-sm text-gray-900 mt-1">
                   {analysisResult.healthScore || 0} / 100
@@ -192,8 +191,7 @@ export default function FoodAnalysis({
                     <p className="text-sm text-gray-900 font-medium">Goal Alignment:</p>
                     <Progress
                       value={analysisResult.personalizedAnalysis.healthGoalImpact.goalAlignmentScore || 0}
-                      className="h-2 flex-grow bg-gray-200"
-                      indicatorClassName={getProgressIndicatorClass(analysisResult.personalizedAnalysis.healthGoalImpact.goalAlignmentScore || 0)}
+                      className={`h-2 flex-grow bg-gray-200 ${getProgressIndicatorClass(analysisResult.personalizedAnalysis.healthGoalImpact.goalAlignmentScore || 0)}`}
                     />
                     <p className="text-sm text-gray-900">
                       {analysisResult.personalizedAnalysis.healthGoalImpact.goalAlignmentScore || 0} / 100
@@ -265,7 +263,7 @@ export default function FoodAnalysis({
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center space-x-2 mb-2">
-                        <Progress value={alt.healthScore || 0} className="h-2 flex-grow bg-blue-200" indicatorClassName="bg-blue-500" />
+                        <Progress value={alt.healthScore || 0} className={`h-2 flex-grow bg-blue-500`} />
                         <p className="text-sm font-medium text-blue-800">
                           {alt.healthScore || 0} / 100
                         </p>
