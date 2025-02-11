@@ -37,6 +37,16 @@ const computeWidth = (value, max) => {
 function FoodScanOverlay({ isOpen, onClose, data }) {
   // Convert sugar total to a number using parseFloat (fallback to 0)
   const sugarTotal = parseFloat(data.sugar.total) || 0;
+  
+  // ✅ Add this to ensure `consumedMacros` always has default values
+  const consumedMacros = data.consumption?.consumedMacros || {
+    Carbohydrates: 0,
+    Fats: 0,
+    Proteins: 0,
+    sugarConsumed: 0,
+  };
+
+  
   return (
     <AnimatePresence>
       {isOpen && (
@@ -188,6 +198,26 @@ function FoodScanOverlay({ isOpen, onClose, data }) {
                       </Badge>
                     </div>
                   </div>
+
+                                   {/* ✅ Consumed Macros Section */}
+                                   <div className="consumed-macros">
+                    <h3 className="text-lg font-semibold text-white">
+                      Consumed Macros
+                    </h3>
+                    {data.consumption && data.consumption.consumedMacros ? (
+                      <>
+                        <p>Carbohydrates: {consumedMacros.Carbohydrates}g</p>
+                        <p>Fats: {consumedMacros.Fats}g</p>
+                        <p>Proteins: {consumedMacros.Proteins}g</p>
+                        <p>Sugar Consumed: {data.consumption.sugarConsumed}g</p>
+                      </>
+                    ) : (
+                      <p className="text-gray-400">No macro consumption data available.</p>
+                    )}
+                  </div>
+
+
+
 
                   {/* Footer */}
                   <div className="flex items-center justify-between text-sm text-gray-400 pt-4 border-t border-gray-800">
@@ -357,7 +387,19 @@ const FoodScanHistory = () => {
     },
     allergens: scan.analysis?.allergens || [],
     timestamp: scan.createdAt,
-  });
+
+    // ✅ Added Consumed Macros Mapping
+    consumption: {
+      consumedMacros: {
+        Carbohydrates: scan.consumption?.consumedMacros?.Carbohydrates || 0,
+        Fats: scan.consumption?.consumedMacros?.Fats || 0,
+        Proteins: scan.consumption?.consumedMacros?.Proteins || 0,
+        sugarConsumed: scan.consumption?.sugarConsumed || 0,
+      },
+    },
+});
+
+  
 
   if (loading) {
     return (
@@ -366,6 +408,7 @@ const FoodScanHistory = () => {
       </p>
     );
   }
+
 
   return (
     <div className="min-h-screen p-6 bg-gradient-to-br from-[#0a0a0a] via-[#121212] to-black">
@@ -488,6 +531,8 @@ const FoodScanHistory = () => {
       </div>
       {modalOpen && selectedScan && (
         <FoodScanOverlay
+
+        
           isOpen={modalOpen}
           onClose={() => {
             setModalOpen(false);
