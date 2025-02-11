@@ -296,7 +296,7 @@ export default function AnalysisPage() {
 
       {/* Consumption bar pinned at bottom if not completed and user hasn't said "No" */}
       {isConsumptionBarVisible && (
-        <div className="fixed bottom-0 left-0 right-0 z-20 flex items-center justify-between gap-4 border-t bg-white px-4 shadow-sm">
+        <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-4 border-t bg-white px-4 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full py-2 text-gray-800">
             {/* "Consumption Tracking" heading, centered on mobile */}
             <h2 className="text-lg font-semibold text-gray-900 text-center sm:text-left">
