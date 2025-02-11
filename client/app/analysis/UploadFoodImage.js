@@ -25,7 +25,6 @@ export default function UploadFoodImage({
   });
 
   return (
-    // Changed "ml-[250px]" to "mx-auto" to center the component horizontally
     <div className="w-full mx-auto mt-32 mb-12 max-w-2xl">
       <div className="rounded-xl bg-gradient-to-br from-gray-900 via-gray-800 to-black p-8">
         <div className="text-center space-y-4">
@@ -51,12 +50,19 @@ export default function UploadFoodImage({
                   <img src={preview} alt="Food Label Preview" className="object-cover w-full h-full" />
                 </div>
               )}
-              <div className="flex gap-4 mt-6">
-                <Button onClick={handleScanClick} className="bg-purple-600 hover:bg-purple-700">
+              <div className="flex flex-col md:flex-row gap-4 mt-6">
+                <Button 
+                  onClick={handleScanClick} 
+                  className="w-full md:w-auto bg-purple-600 hover:bg-purple-700"
+                >
                   <Camera className="mr-2 h-4 w-4" />
                   Use Camera
                 </Button>
-                <Button onClick={handleSubmit} disabled={!image} className="bg-blue-600 hover:bg-blue-700">
+                <Button 
+                  onClick={handleSubmit} 
+                  disabled={!image} 
+                  className="w-full md:w-auto bg-blue-600 hover:bg-blue-700"
+                >
                   <Upload className="mr-2 h-4 w-4" />
                   Analyze Food
                 </Button>
