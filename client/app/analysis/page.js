@@ -224,7 +224,7 @@ export default function AnalysisPage() {
   return (
     <div className="w-full relative">
       {/* Upload area */}
-      <div className="w-full mx-auto mt-32 mb-12 max-w-2xl">
+      <div className="w-full mx-auto mt-32 mb-12  max-w-2xl">
         {loading ? (
           <div
             className="flex flex-col items-center justify-center"
@@ -275,7 +275,7 @@ export default function AnalysisPage() {
 
       {/* Analysis result */}
       {analysisResult && (
-        <div ref={analysisRef} className="scroll-mt-32">
+        <div ref={analysisRef} className="scroll-mt-32 pb-24">
           <FoodAnalysis
             analysisResult={analysisResult}
             getBadgeClasses={(variant) =>
