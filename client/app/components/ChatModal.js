@@ -66,7 +66,7 @@ export default function ChatModal({ onClose }) {
         Also handle responsiveness for mobile vs. desktop.
       */
       className="
-        z-30
+        z-40
         fixed 
         bottom-2 
         right-2 
